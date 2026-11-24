@@ -13,7 +13,7 @@
 <title>究極RIDE 走行ロガー</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-:root{--bg:#0d0f12;--card:#171a20;--line:#2a2f38;--tx:#e9edf2;--mut:#8b94a3;--ac:#ff7a1a;--L:#38bdf8;--R:#f472b6;--ok:#4ade80;--ng:#f87171}
+:root{--A:#ff7a1a;--B:#22d3ee;--bg:#0d0f12;--card:#171a20;--line:#2a2f38;--tx:#e9edf2;--mut:#8b94a3;--ac:#ff7a1a;--L:#38bdf8;--R:#f472b6;--ok:#4ade80;--ng:#f87171}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Hiragino Sans",sans-serif;font-size:15px}
 header{padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
@@ -71,6 +71,19 @@ b.r{display:inline-flex;min-width:18px;height:18px;padding:0 4px;border-radius:9
 .toc{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}.toc a{color:var(--tx);text-decoration:none;background:#222731;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;text-align:center}
 .faq details{border-bottom:1px dashed var(--line);padding:10px 0}.faq details:last-child{border:0}
 .faq summary{font-weight:600;font-size:14px;cursor:pointer}.faq details .note{margin-top:6px}
+.tg{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(255,122,26,.18);color:var(--ac);margin-right:6px;vertical-align:1px}
+.filt{display:flex;gap:8px;margin-bottom:8px}.filt select{padding:9px;font-size:14px}
+.hist{position:relative}.hist .ck{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:13px;border:2px solid var(--mut);display:none;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#111}
+.cmpmode .hist{padding-right:48px}.cmpmode .hist .ck{display:flex}
+.hist.selA .ck{background:var(--A);border-color:var(--A)}.hist.selB .ck{background:var(--B);border-color:var(--B)}
+.cmpbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0 8px;display:flex;gap:8px;align-items:center}
+.cmpbar .mut{flex:1;font-size:13px}
+#cmpView{position:fixed;inset:0;background:var(--bg);z-index:85;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ab{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ab div{border-radius:10px;padding:8px 10px;background:#0f1216;font-size:12px;line-height:1.5;border-left:4px solid}
+table.ct{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.ct th,.ct td{padding:7px 4px;border-bottom:1px dashed var(--line);text-align:right}.ct th:first-child,.ct td:first-child{text-align:left;color:var(--mut);font-weight:400}
+.ct thead th{font-size:12px}.up{color:var(--ok)}.dn{color:var(--ng)}
+#cmpMap{height:300px;border-radius:12px;background:#222}
 ol{padding-left:20px;line-height:1.8;font-size:14px;margin:0}
 </style>
 </head>
@@ -100,6 +113,11 @@ ol{padding-left:20px;line-height:1.8;font-size:14px;margin:0}
     <button class="b" id="btnCal" disabled>② 校正する（車体をまっすぐ立てて静止）</button>
     <div class="info" id="calInfo"></div>
   </div>
+  <div class="card">
+    <h3>走行形態</h3>
+    <select id="rtype"><option value="">選択しない（フリー走行など）</option><option>8の字</option><option>A-1</option><option>A-2</option><option>B-1</option><option>B-2</option><option>Cパターン</option><option>加速-減速</option><option>発進-停止</option><option>低速</option><option>4本パイロン</option><option>L字</option><option>オフセット</option><option>3本Zターン</option><option>直パイ</option><option>コーススラローム</option><option>定常円旋回</option></select>
+    <div id="pyWrap"><label>パイロン間隔（自由に記入）</label><input id="pylon" placeholder="例：2×4、6m間隔 など"></div>
+  </div>
   <button class="b p" id="btnStart" disabled>③ 記録スタート</button>
   <div class="warn" style="margin-top:12px">記録の開始・停止は必ず停車中に。走行中は画面を見ずに運転に集中してください。記録中は画面をつけたままにする必要があります（設定→画面表示と明るさ→自動ロック→「なし」がおすすめ）。</div>
   <button class="b" id="btnSample">サンプルデータで分析画面を見る</button>
@@ -107,6 +125,8 @@ ol{padding-left:20px;line-height:1.8;font-size:14px;margin:0}
 
 <!-- 履歴タブ -->
 <section id="tab-hist" class="hide">
+  <div class="filt"><select id="fType"><option value="">走行形態：すべて</option><option>8の字</option><option>A-1</option><option>A-2</option><option>B-1</option><option>B-2</option><option>Cパターン</option><option>加速-減速</option><option>発進-停止</option><option>低速</option><option>4本パイロン</option><option>L字</option><option>オフセット</option><option>3本Zターン</option><option>直パイ</option><option>コーススラローム</option><option>定常円旋回</option></select><select id="fRider"><option value="">ライダー：全員</option></select></div>
+  <div class="cmpbar"><span class="mut" id="cmpMsg">記録をタップで分析を表示</span><button class="b s" id="cmpBtn">比べる</button></div>
   <div id="histList"></div>
   <label>共有データ（.json）を読み込む</label>
   <input type="file" id="importFile" accept=".json,application/json">
@@ -117,7 +137,7 @@ ol{padding-left:20px;line-height:1.8;font-size:14px;margin:0}
   <div class="card"><h3>📖 走行ロガーの使い方</h3>
   <div class="note">iPhoneのセンサーとGPSで、バンク角・倒し込みの速さ・G・走ったルートを記録して分析します。</div>
   <div class="flow"><span>①取り付け</span><span>②許可</span><span>③校正</span><span>④記録</span><span>⑤分析</span></div>
-  <div class="toc"><a href="#h-rec">記録のしかた</a><a href="#h-an">分析画面の見方</a><a href="#h-share">生徒→先生へ送る</a><a href="#h-faq">うまくいかないとき</a></div></div>
+  <div class="toc"><a href="#h-rec">記録のしかた</a><a href="#h-an">分析画面の見方</a><a href="#h-cmp">記録を比べる</a><a href="#h-share">生徒→先生へ送る</a><a href="#h-faq">うまくいかないとき</a></div></div>
 
   <h2 class="hh" id="h-rec">記録のしかた</h2>
   <div class="card"><h3><i class="sn">1</i>iPhoneを取り付ける</h3>
@@ -158,9 +178,9 @@ ol{padding-left:20px;line-height:1.8;font-size:14px;margin:0}
 <text x="318" y="92" text-anchor="end" fill="#ff7a1a" font-size="12" font-weight="700">約3秒 動かさない</text>
 </svg></div>
 
-  <div class="card"><h3><i class="sn">4</i>記録スタート</h3>
-  <img class="hp" src="help-s3_start.jpg" alt="記録スタート" loading="lazy">
-  <div class="note">校正が「OK」になったら <b class="r">⑤</b>「記録スタート」。<b>停車中に押して</b>から走り出します。</div>
+  <div class="card"><h3><i class="sn">4</i>走行形態を選んで記録スタート</h3>
+  <img class="hp" src="help-s3_start.jpg" alt="走行形態と記録スタート" loading="lazy">
+  <div class="note"><b class="r">⑤</b> 走行形態を選ぶ（8の字、A-1〜Cパターン、L字、直パイ、コーススラローム、定常円旋回など）<br><b class="r">⑥</b> パイロン間隔を自由に記入（例：2×4）。コーススラロームと定常円旋回では出ません<br><b class="r">⑦</b> 校正が「OK」になったら「記録スタート」。<b>停車中に押して</b>から走り出します<br>選んだ形態と間隔は次回も残ります。間違えたら、分析画面の上の「変更」で直せます。</div>
   <div class="warn" style="margin-top:8px">記録中は画面をつけたままにしてください。<br>設定 → 画面表示と明るさ → 自動ロック →「なし」</div></div>
 
   <div class="card"><h3><i class="sn">5</i>記録中の画面と停止</h3>
@@ -187,6 +207,16 @@ ol{padding-left:20px;line-height:1.8;font-size:14px;margin:0}
   <div class="card"><h3>コーナー別分析</h3>
   <img class="hp" src="help-a5_corner.jpg" alt="コーナー一覧" loading="lazy">
   <div class="note">15°以上寝かせたコーナーを自動で見つけて並べます。1行目＝左右と最大バンク角、進入→最低→立ち上がりの速度。2行目＝倒し込み・起こしの速さ、ブレーキG、横G。タップすると地図とグラフがそのコーナーに切り替わります。</div></div>
+
+  <h2 class="hh" id="h-cmp">過去の記録・ほかの人と比べる</h2>
+  <div class="card"><h3><i class="sn">1</i>「履歴」で2つ選ぶ</h3>
+  <img class="hp" src="help-c1_hist.jpg" alt="比べる記録を選ぶ" loading="lazy">
+  <div class="note"><b class="r">1</b> 走行形態・ライダーで絞り込めます<br><b class="r">2</b>「比べる」を押して、記録を2つタップ（1つ目がA＝オレンジ、2つ目がB＝水色）<br>分析画面の「ほかの記録と比べる」からも始められます。ほかの人の記録は、共有用データを読み込めば比べられます。</div></div>
+  <div class="card"><h3><i class="sn">2</i>比較画面の見方</h3>
+  <img class="hp" src="help-c2_cmp.jpg" alt="比較のまとめ" loading="lazy">
+  <div class="note">まとめの数字を並べて、差（B−A）を出します。緑はBのほうが大きい、赤は小さい。右上の「⇄」でAとBを入れ替えられます。</div>
+  <img class="hp" src="help-c3_graph.jpg" alt="グラフを重ねる" loading="lazy">
+  <div class="note">バンク角・速度などの波形を重ねます。最初は「走り出し」（時速5km/hを超えたところ）でそろえて表示します。ずれているときは「Bをずらす」で合わせてください。なぞると同じ瞬間のAとBの数値が出ます。下にはG-G図とGPSのラインも重ねて表示します。</div></div>
 
   <h2 class="hh" id="h-share">生徒さん → 先生へデータを送る</h2>
   <div class="card">
@@ -252,6 +282,8 @@ ol{padding-left:20px;line-height:1.8;font-size:14px;margin:0}
 <div id="anView" class="hide">
   <header><button class="b s" id="anBack">← 戻る</button><b id="anTitle" style="flex:1;font-size:15px"></b></header>
   <main style="padding-bottom:40px">
+    <div class="card"><div class="row" style="justify-content:space-between"><div id="anType" style="font-size:14px"></div><button class="b s" id="anTypeEdit">変更</button></div>
+      <div id="anTypeForm" class="hide"><select id="eType"><option value="">選択しない（フリー走行など）</option><option>8の字</option><option>A-1</option><option>A-2</option><option>B-1</option><option>B-2</option><option>Cパターン</option><option>加速-減速</option><option>発進-停止</option><option>低速</option><option>4本パイロン</option><option>L字</option><option>オフセット</option><option>3本Zターン</option><option>直パイ</option><option>コーススラローム</option><option>定常円旋回</option></select><div id="ePyWrap"><label>パイロン間隔</label><input id="ePylon" placeholder="例：2×4"></div><button class="b p" id="anTypeSave">保存</button></div></div>
     <div class="card"><div class="sum" id="anSum"></div></div>
     <div class="card"><h3>ルート（バンク角で色分け）</h3><div id="map"></div>
       <div class="leg"><span><i style="background:#64748b"></i>〜10°</span><span><i style="background:#4ade80"></i>〜20°</span><span><i style="background:#facc15"></i>〜30°</span><span><i style="background:#fb923c"></i>〜40°</span><span><i style="background:#ef4444"></i>40°〜</span></div>
@@ -274,10 +306,29 @@ ol{padding-left:20px;line-height:1.8;font-size:14px;margin:0}
     </div>
     <div class="card"><h3>コーナー別分析 <span class="mut" id="cnCount" style="font-size:12px;font-weight:400"></span></h3><div id="cnList"></div></div>
     <div class="card"><h3>書き出し</h3>
+      <button class="b" id="exCmp">ほかの記録と比べる</button>
       <button class="b" id="exShare">共有用データ（LINEなどで送る）</button>
       <button class="b" id="exCsv">CSV（動画編集・表計算用）</button>
       <button class="b" id="exDel" style="color:var(--ng)">この記録を削除</button>
     </div>
+  </main>
+</div>
+
+<!-- 比較画面 -->
+<div id="cmpView" class="hide">
+  <header><button class="b s" id="cmpBack">← 戻る</button><b style="flex:1;font-size:15px">記録の比較</b><button class="b s" id="cmpSwap">⇄</button></header>
+  <main style="padding-bottom:40px">
+    <div class="card"><div class="ab" id="cmpHead"></div></div>
+    <div class="card"><h3>まとめ</h3><table class="ct" id="cmpTable"></table><div class="info">差＝B−A。緑はBのほうが大きい</div></div>
+    <div class="card"><h3>グラフを重ねる</h3>
+      <div class="chips" id="cChips"><button class="chip on" data-k="lean">バンク角</button><button class="chip" data-k="spd">速度</button><button class="chip" data-k="rate">倒し込み/起こし</button><button class="chip" data-k="lon">前後G</button><button class="chip" data-k="lat">横G</button></div>
+      <div class="chips" id="cAlign"><button class="chip on" data-k="go">走り出しでそろえる</button><button class="chip" data-k="rec">記録開始でそろえる</button></div>
+      <canvas id="cts" height="230"></canvas>
+      <div class="info" id="ctsInfo">グラフをなぞると2つの数値が出ます</div>
+      <div class="row" style="margin-top:6px"><span class="mut" style="font-size:12px;flex:1">Bをずらす：<b id="offV">0.0</b>秒</span><button class="b s" data-o="-1">−1</button><button class="b s" data-o="-0.2">−0.2</button><button class="b s" data-o="0.2">+0.2</button><button class="b s" data-o="1">+1</button></div>
+    </div>
+    <div class="card"><h3>G-G図を重ねる</h3><canvas id="cgg" height="320"></canvas></div>
+    <div class="card"><h3>ラインを重ねる</h3><div id="cmpMap"></div><div class="info">GPSなので数メートルの誤差があります。違う場所の記録同士は離れて表示されます</div></div>
   </main>
 </div>
 
@@ -317,6 +368,12 @@ let calib=null;try{calib=JSON.parse(localStorage.getItem('calib')||'null')}catch
 const savedMount=localStorage.getItem('mount');if(savedMount)$('#mount').value=savedMount;
 $('#rider').value=localStorage.getItem('rider')||'';
 $('#rider').onchange=e=>localStorage.setItem('rider',e.target.value);
+const NOPY=['コーススラローム','定常円旋回',''];
+const pyToggle=(sel,wrap)=>$(wrap).classList.toggle('hide',NOPY.includes($(sel).value));
+$('#rtype').value=localStorage.getItem('rtype')||'';$('#pylon').value=localStorage.getItem('pylon')||'';pyToggle('#rtype','#pyWrap');
+$('#rtype').onchange=()=>{localStorage.setItem('rtype',$('#rtype').value);pyToggle('#rtype','#pyWrap')};
+$('#pylon').onchange=()=>localStorage.setItem('pylon',$('#pylon').value);
+const typeLabel=s=>s&&s.type?`<span class="tg">${esc(s.type)}${s.pylon&&!NOPY.includes(s.type)?'（'+esc(s.pylon)+'）':''}</span>`:'';
 
 function onMotion(e){
   const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;
@@ -474,7 +531,8 @@ async function stopRec(){
   try{wakeLock&&wakeLock.release()}catch(e){}
   $('#recView').classList.add('hide');
   if(rec.S.t.length<HZ*5){alert('記録が短すぎるため保存しませんでした');return}
-  const sess={id:'s'+Date.now(),at:Date.now(),rider:$('#rider').value||'',mount:calib.mount,samples:rec.S,gps:rec.gps,gaps:rec.gaps,ver:1};
+  const rt=$('#rtype').value;
+  const sess={id:'s'+Date.now(),at:Date.now(),rider:$('#rider').value||'',type:rt,pylon:NOPY.includes(rt)?'':$('#pylon').value.trim(),mount:calib.mount,samples:rec.S,gps:rec.gps,gaps:rec.gaps,ver:1};
   await DB.put(sess);
   openAnalysis(sess);
 }
@@ -534,9 +592,15 @@ function openAnalysis(sess){
   $('#anSum').innerHTML=items.map(x=>`<div><b style="color:${x[2]||'inherit'}">${x[0]}</b><span>${x[1]}</span></div>`).join('');
   if(sess.gaps)$('#anSum').insertAdjacentHTML('afterend',`<div class="info">※画面オフ等で記録が途切れた箇所が${sess.gaps}回あります</div>`);
   $('#exDel').classList.toggle('hide',!!sess.sample);
+  showType();$('#anTypeForm').classList.add('hide');
   $('#anView').classList.remove('hide');$('#anView').scrollTop=0;
   renderCorners();drawMap();drawTS();drawGG();
 }
+function showType(){$('#anType').innerHTML=cur.type?typeLabel(cur):'<span class="mut">走行形態：未選択</span>'}
+$('#anTypeEdit').onclick=()=>{$('#eType').value=cur.type||'';$('#ePylon').value=cur.pylon||'';pyToggle('#eType','#ePyWrap');$('#anTypeForm').classList.toggle('hide')};
+$('#eType').onchange=()=>pyToggle('#eType','#ePyWrap');
+$('#anTypeSave').onclick=async()=>{cur.type=$('#eType').value;cur.pylon=NOPY.includes(cur.type)?'':$('#ePylon').value.trim();if(!cur.sample)await DB.put(cur);showType();$('#anTypeForm').classList.add('hide')};
+$('#exCmp').onclick=()=>{const id=cur.sample?null:cur.id;$('#fType').value=cur.sample?'':(cur.type||'');$('#fRider').value='';$('#anBack').click();showTab('hist');startCmp(id,cur.sample?cur:null)};
 $('#anBack').onclick=()=>{$('#anView').classList.add('hide');document.querySelectorAll('#anView .info').forEach(e=>{if(e.id==='')e.remove()});loadHist()};
 
 function renderCorners(){
@@ -620,13 +684,83 @@ function drawGG(){
 }
 window.addEventListener('resize',()=>{if(!$('#anView').classList.contains('hide')){drawTS();drawGG()}});
 
+/* ---------- 比較 ---------- */
+let CA=null,CB=null,cmpMapObj=null,cmpLayer=null,cOn={lean:1,spd:0,rate:0,lon:0,lat:0},cAlign='go',cOff=0,ctsCur=null;
+const goTime=a=>{const i=a.spd.findIndex(v=>v>5);return i<0?0:a.t[i]};
+const sessName=s=>{const d=new Date(s.at);return `${esc(s.rider||'名前なし')}　${d.toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'})} ${d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}`};
+function openCmp(a,b){
+  CA={s:a,A:analyze(a)};CB={s:b,A:analyze(b)};cOff=0;ctsCur=null;
+  $('#cmpView').classList.remove('hide');$('#cmpView').scrollTop=0;renderCmp();
+}
+function renderCmp(){
+  const a=CA,b=CB;
+  $('#cmpHead').innerHTML=[['A',a,'var(--A)'],['B',b,'var(--B)']].map(([k,x,c])=>`<div style="border-color:${c}"><b style="color:${c}">${k}</b>　${typeLabel(x.s)}<br>${sessName(x.s)}</div>`).join('');
+  if(a.s.type!==b.s.type)$('#cmpHead').insertAdjacentHTML('beforeend','<div style="grid-column:span 2;border-color:var(--ng)" class="mut">走行形態が違う記録同士です</div>');
+  const rows=[['左 最大バンク','maxL','°',0],['右 最大バンク','maxR','°',0],['最速 倒し込み','inR','°/s',0],['最速 起こし','outR','°/s',0],['最大 横G','latG','G',2],['最大 ブレーキG','brake','G',2],['最大 加速G','acc','G',2],['最高速','vMax','km/h',0],['走行時間','dur','',-1],['距離','dist','km',-2]];
+  const f=(v,d)=>d===-1?fmtT(v):d===-2?(v/1000).toFixed(2):v.toFixed(d);
+  const dif=(r)=>{const d=r[3],va=a.A.sum[r[1]],vb=b.A.sum[r[1]],x=vb-va;if(d===-1)return (x>=0?'+':'−')+fmtT(Math.abs(x));const v=d===-2?x/1000:x;const dd=d<0?2:d;if(Math.abs(v)<Math.pow(10,-dd)/2)return '±0';return `<span class="${v>0?'up':'dn'}">${v>0?'+':'−'}${Math.abs(v).toFixed(dd)}</span>`};
+  $('#cmpTable').innerHTML=`<thead><tr><th></th><th style="color:var(--A)">A</th><th style="color:var(--B)">B</th><th>差</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr><td>${r[0]}</td><td>${f(a.A.sum[r[1]],r[3])}<small class="mut"> ${r[2]}</small></td><td>${f(b.A.sum[r[1]],r[3])}<small class="mut"> ${r[2]}</small></td><td>${dif(r)}</td></tr>`).join('')+
+    `<tr><td>コーナー数</td><td>${a.A.C.length}</td><td>${b.A.C.length}</td><td>${b.A.C.length-a.A.C.length>0?'+':''}${b.A.C.length-a.A.C.length}</td></tr></tbody>`;
+  drawCTS();drawCGG();drawCMap();
+}
+const cShift=x=>cAlign==='go'?goTime(x.A):0;
+function drawCTS(){
+  const cv=$('#cts');const [x,W,H]=setupCanvas(cv);const pl=34,pr=8,pt=10,pb=20,w=W-pl-pr,h=H-pt-pb;
+  const sa=cShift(CA),sb=cShift(CB)-cOff;
+  const t1=Math.max(CA.A.t[CA.A.t.length-1]-sa,CB.A.t[CB.A.t.length-1]-sb),t0=Math.min(0,-sa,-sb)*0+Math.min(-0, Math.min(CA.A.t[0]-sa,CB.A.t[0]-sb));
+  const X=t=>pl+(t-t0)/(t1-t0)*w;
+  x.font='10px -apple-system';x.fillStyle='#8b94a3';x.strokeStyle='#2a2f38';x.lineWidth=1;
+  const k=Object.keys(cOn).find(q=>cOn[q])||'lean';
+  const cfg={lean:[60,'°',v=>v],spd:[null,'km/h',v=>v],rate:[240,'°/s',v=>v],lon:[1.2,'G',v=>v],lat:[1.5,'G',v=>v]}[k];
+  let M=cfg[0];if(k==='spd')M=Math.max(20,Math.ceil(Math.max(...CA.A.spd,...CB.A.spd)/20)*20);
+  const Y=k==='spd'?(v=>pt+h-v/M*h):(v=>pt+h/2-clamp(v,-M,M)/M*(h/2));
+  const ticks=k==='spd'?[0,M/2,M]:[-M,-M/2,0,M/2,M];
+  ticks.forEach(v=>{x.beginPath();x.moveTo(pl,Y(v));x.lineTo(W-pr,Y(v));x.stroke();const lb=k==='lean'?(v>0?'左':v<0?'右':'')+Math.abs(v):(+v.toFixed(2));x.fillText(lb+(v===ticks[ticks.length-1]?cfg[1]:''),2,Y(v)+3)});
+  const st=Math.pow(10,Math.floor(Math.log10((t1-t0)/4||1)));const stp=[1,2,5,10].map(q=>q*st).find(q=>(t1-t0)/q<=6)||st*10;
+  for(let q=Math.ceil(t0/stp)*stp;q<=t1;q+=stp)x.fillText((q<0?'-':'')+fmtT(Math.abs(q)),X(q)-10,H-5);
+  const key={lean:'L',spd:'spd',rate:'rate',lon:'lon',lat:'lat'}[k];
+  [[CA,sa,'#ff7a1a'],[CB,sb,'#22d3ee']].forEach(([c,s,col])=>{const arr=c.A[key],t=c.A.t,n=t.length,stride=Math.max(1,Math.floor(n/(w*2)));
+    x.beginPath();x.strokeStyle=col;x.lineWidth=1.8;let f=1;for(let i=0;i<n;i+=stride){const px=X(t[i]-s),py=Y(arr[i]);f?x.moveTo(px,py):x.lineTo(px,py);f=0}x.stroke()});
+  if(ctsCur!=null){x.strokeStyle='#fff';x.lineWidth=1;x.beginPath();x.moveTo(X(ctsCur),pt);x.lineTo(X(ctsCur),pt+h);x.stroke()}
+  cv._inv=px=>t0+(px-pl)/w*(t1-t0);cv._k=key;cv._s=[sa,sb];cv._u=cfg[1];
+}
+(()=>{const cv=$('#cts');const mv=e=>{if(!CA)return;const r=cv.getBoundingClientRect();const T=cv._inv(e.clientX-r.left);ctsCur=T;drawCTS();
+  const val=(c,s)=>{const t=T+s;if(t<c.A.t[0]||t>c.A.t[c.A.t.length-1])return '-';const v=c.A[cv._k][idxAt(c.A.t,t)];return cv._k==='L'?(v>=0?'左':'右')+Math.abs(v).toFixed(0)+'°':v.toFixed(cv._u==='G'?2:0)+cv._u};
+  $('#ctsInfo').innerHTML=`${T<0?'-':''}${fmtT(Math.abs(T))}　<b style="color:var(--A)">A ${val(CA,cv._s[0])}</b>　<b style="color:var(--B)">B ${val(CB,cv._s[1])}</b>`};
+  cv.addEventListener('pointerdown',mv);cv.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType==='touch')mv(e)})})();
+document.querySelectorAll('#cChips .chip').forEach(b=>b.onclick=()=>{Object.keys(cOn).forEach(q=>cOn[q]=0);cOn[b.dataset.k]=1;document.querySelectorAll('#cChips .chip').forEach(z=>z.classList.toggle('on',z===b));drawCTS()});
+document.querySelectorAll('#cAlign .chip').forEach(b=>b.onclick=()=>{cAlign=b.dataset.k;document.querySelectorAll('#cAlign .chip').forEach(z=>z.classList.toggle('on',z===b));drawCTS()});
+document.querySelectorAll('#cmpView [data-o]').forEach(b=>b.onclick=()=>{cOff=Math.round((cOff+ +b.dataset.o)*10)/10;$('#offV').textContent=(cOff>0?'+':'')+cOff.toFixed(1);drawCTS()});
+function drawCGG(){
+  const cv=$('#cgg');const [x,W,H]=setupCanvas(cv);const cx=W/2,cy=H/2,R=Math.min(W,H)/2-18,M=1.2,sc=R/M;
+  x.strokeStyle='#2a2f38';x.fillStyle='#8b94a3';x.font='10px -apple-system';
+  [0.5,1.0].forEach(r=>{x.beginPath();x.arc(cx,cy,r*sc,0,Math.PI*2);x.stroke();x.fillText(r.toFixed(1)+'G',cx+r*sc*0.71+2,cy-r*sc*0.71)});
+  x.beginPath();x.moveTo(cx-R,cy);x.lineTo(cx+R,cy);x.moveTo(cx,cy-R);x.lineTo(cx,cy+R);x.stroke();
+  x.fillText('加速',cx+4,12);x.fillText('ブレーキ',cx+4,H-4);x.fillText('左',4,cy-4);x.fillText('右',W-14,cy-4);
+  [[CA,'rgba(255,122,26,.45)'],[CB,'rgba(34,211,238,.45)']].forEach(([c,col])=>{const A2=c.A,n=A2.t.length,stride=Math.max(1,Math.floor(n/5000));x.fillStyle=col;
+    for(let i=0;i<n;i+=stride)if(A2.spd[i]>8){const px=cx-clamp(A2.lat[i],-M,M)*sc,py=cy-clamp(A2.lon[i],-M,M)*sc;x.fillRect(px-1.2,py-1.2,2.4,2.4)}});
+  x.fillStyle='#ff7a1a';x.fillText('● A',W-50,H-20);x.fillStyle='#22d3ee';x.fillText('● B',W-50,H-6);
+}
+function drawCMap(){
+  if(!L_){$('#cmpMap').innerHTML='<div class="note" style="padding:20px">地図を読み込めませんでした</div>';return}
+  if(!cmpMapObj){cmpMapObj=L_.map('cmpMap',{zoomControl:false});L_.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(cmpMapObj)}
+  if(cmpLayer)cmpLayer.remove();cmpLayer=L_.layerGroup().addTo(cmpMapObj);
+  const all=[];[[CA,'#ff7a1a'],[CB,'#22d3ee']].forEach(([c,col])=>{const pts=(c.s.gps||[]).map(p=>[p.lat,p.lon]);if(pts.length>1){L_.polyline(pts,{color:col,weight:4,opacity:.9}).addTo(cmpLayer);all.push(...pts)}});
+  $('#cmpMap').style.height=all.length?'300px':'60px';
+  setTimeout(()=>{cmpMapObj.invalidateSize();if(all.length)cmpMapObj.fitBounds(L_.latLngBounds(all),{padding:[20,20]})},60);
+}
+$('#cmpBack').onclick=()=>{$('#cmpView').classList.add('hide');if(cmp){cmp.sel.pop();updCmp()}};
+$('#cmpSwap').onclick=()=>{[CA,CB]=[CB,CA];if(cmp)cmp.sel.reverse();updCmp();renderCmp()};
+window.addEventListener('resize',()=>{if(!$('#cmpView').classList.contains('hide')){drawCTS();drawCGG()}});
+
 /* ---------- 書き出し ---------- */
 async function shareFile(name,text,type){
   const file=new File([text],name,{type});
   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:name});return}catch(e){if(e.name==='AbortError')return}}
   const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 }
-const fname=ext=>{const d=new Date(cur.at);const p=n=>String(n).padStart(2,'0');return `ride_${cur.rider?cur.rider+'_':''}${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.${ext}`};
+const fname=ext=>{const d=new Date(cur.at);const p=n=>String(n).padStart(2,'0');return `ride_${cur.rider?cur.rider+'_':''}${cur.type?cur.type+'_':''}${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.${ext}`};
 $('#exShare').onclick=()=>shareFile(fname('json'),JSON.stringify(cur),'application/json');
 $('#exCsv').onclick=()=>{
   const rows=['time_s,lean_deg(+left),roll_rate_dps,long_G(+accel),lat_G(+left),speed_kmh,lat,lon'];
@@ -636,15 +770,37 @@ $('#exCsv').onclick=()=>{
 $('#exDel').onclick=async()=>{if(!confirm('この記録を削除しますか？元に戻せません。'))return;await DB.del(cur.id);$('#anBack').click()};
 
 /* ---------- 履歴 ---------- */
+let cmp=null; // 比較モード {sel:[sessions]}
+let histCache=[];
+function startCmp(firstId,firstObj){cmp={sel:[]};document.body.classList.add('cmpmode');
+  if(firstObj)cmp.sel.push(firstObj);loadHist().then(()=>{if(firstId){const s=histCache.find(x=>x.id===firstId);if(s)cmp.sel.push(s)}updCmp()})}
+function endCmp(){cmp=null;document.body.classList.remove('cmpmode');updCmp()}
+function updCmp(){
+  document.querySelectorAll('.hist').forEach(el=>{const i=cmp?cmp.sel.findIndex(s=>s.id===el.dataset.id):-1;el.classList.toggle('selA',i===0);el.classList.toggle('selB',i===1);el.querySelector('.ck').textContent=i===0?'A':i===1?'B':''});
+  $('#cmpBtn').textContent=cmp?'やめる':'比べる';
+  $('#cmpMsg').textContent=!cmp?'記録をタップで分析を表示':cmp.sel.length===0?'比べる記録を2つタップ（1つ目＝A）':cmp.sel.length===1?'2つ目（B）をタップ':'';
+}
+$('#cmpBtn').onclick=()=>cmp?endCmp():startCmp();
+$('#fType').onchange=$('#fRider').onchange=()=>loadHist();
 async function loadHist(){
-  let list=[];try{list=await DB.all()}catch(e){}
-  list.sort((a,b)=>b.at-a.at);
+  let all=[];try{all=await DB.all()}catch(e){}
+  all.sort((a,b)=>b.at-a.at);histCache=all;
+  const riders=[...new Set(all.map(s=>s.rider||'名前なし'))];const fr=$('#fRider').value;
+  $('#fRider').innerHTML='<option value="">ライダー：全員</option>'+riders.map(r=>`<option${r===fr?' selected':''}>${esc(r)}</option>`).join('');
+  const ft=$('#fType').value;
+  const list=all.filter(s=>(!ft||s.type===ft)&&(!fr||(s.rider||'名前なし')===fr));
   $('#histList').innerHTML=list.length?list.map(s=>{const d=s.samples;let mL=0,mR=0;
     const A2=analyze(s);mL=A2.sum.maxL;mR=A2.sum.maxR;const dt=new Date(s.at);
-    return `<div class="hist" data-id="${esc(s.id)}"><b>${esc(s.rider||'名前なし')}</b>　<span class="mut">${dt.toLocaleDateString('ja-JP')} ${dt.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</span>
+    return `<div class="hist" data-id="${esc(s.id)}"><i class="ck"></i>${typeLabel(s)}<b>${esc(s.rider||'名前なし')}</b>　<span class="mut">${dt.toLocaleDateString('ja-JP')} ${dt.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</span>
     <div>${fmtT(A2.sum.dur)}・最大バンク 左${mL.toFixed(0)}° / 右${mR.toFixed(0)}°・コーナー${A2.C.length}個</div></div>`}).join('')
-    :'<div class="card note">まだ記録がありません。記録タブから走行を記録するか、共有データを読み込んでください。</div>';
-  document.querySelectorAll('.hist').forEach(el=>el.onclick=async()=>openAnalysis(await DB.get(el.dataset.id)));
+    :`<div class="card note">${all.length?'条件に合う記録がありません。':'まだ記録がありません。記録タブから走行を記録するか、共有データを読み込んでください。'}</div>`;
+  document.querySelectorAll('.hist').forEach(el=>el.onclick=async()=>{
+    const s=histCache.find(x=>x.id===el.dataset.id);if(!s)return;
+    if(!cmp)return openAnalysis(s);
+    const i=cmp.sel.findIndex(x=>x.id===s.id);if(i>=0)cmp.sel.splice(i,1);else cmp.sel.push(s);
+    updCmp();if(cmp.sel.length===2)openCmp(cmp.sel[0],cmp.sel[1]);
+  });
+  updCmp();
 }
 $('#importFile').onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
@@ -684,7 +840,7 @@ function makeSample(){
       t+=dt;
     }
   }
-  return {id:'sample',sample:true,at:Date.now(),rider:'サンプル',mount:'yf',samples:S,gps,gaps:0,ver:1};
+  return {id:'sample',sample:true,at:Date.now(),rider:'サンプル',type:'8の字',pylon:'',mount:'yf',samples:S,gps,gaps:0,ver:1};
 }
 $('#btnSample').onclick=()=>openAnalysis(makeSample());
 
