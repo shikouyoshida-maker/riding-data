@@ -62,6 +62,15 @@ canvas{width:100%;display:block;border-radius:10px;background:#0f1216;touch-acti
 .leg{display:flex;gap:10px;font-size:11px;color:var(--mut);margin-top:6px;flex-wrap:wrap}
 .leg i{display:inline-block;width:12px;height:4px;border-radius:2px;margin-right:3px;vertical-align:middle}
 .cmk{background:#111;color:#fff;border:2px solid var(--ac);border-radius:12px;font-size:11px;font-weight:700;text-align:center;line-height:18px}
+.hp{width:100%;display:block;border-radius:10px;border:1px solid var(--line);margin:4px 0 10px}
+.il{width:100%;display:block;background:#0f1216;border-radius:10px;margin:4px 0 10px}
+.sn{display:inline-flex;width:22px;height:22px;border-radius:11px;background:var(--ac);color:#111;font-style:normal;font-weight:800;font-size:13px;align-items:center;justify-content:center;margin-right:8px;vertical-align:1px}
+b.r{display:inline-flex;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#ff2d2d;color:#fff;font-size:11px;align-items:center;justify-content:center;margin-right:4px;vertical-align:1px}
+.hh{font-size:16px;margin:22px 2px 10px;color:var(--ac);scroll-margin-top:12px}
+.flow{display:flex;gap:4px;margin-top:10px;font-size:11px}.flow span{flex:1;text-align:center;background:#0f1216;border-radius:8px;padding:7px 0}
+.toc{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}.toc a{color:var(--tx);text-decoration:none;background:#222731;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;text-align:center}
+.faq details{border-bottom:1px dashed var(--line);padding:10px 0}.faq details:last-child{border:0}
+.faq summary{font-weight:600;font-size:14px;cursor:pointer}.faq details .note{margin-top:6px}
 ol{padding-left:20px;line-height:1.8;font-size:14px;margin:0}
 </style>
 </head>
@@ -105,29 +114,117 @@ ol{padding-left:20px;line-height:1.8;font-size:14px;margin:0}
 
 <!-- 使い方タブ -->
 <section id="tab-help" class="hide">
-  <div class="card"><h3>使い方</h3>
-  <ol>
-    <li>iPhoneをタンクかトップブリッジにしっかり固定（ハンドルは不可：ハンドル操作の回転が混ざります）</li>
-    <li>「センサーとGPSを許可」をタップ</li>
-    <li>取り付け向きを選び、車体をまっすぐ立てて（センタースタンドか、誰かに支えてもらう）「校正する」</li>
-    <li>「記録スタート」→走行→停車して「停止」を長押し</li>
-    <li>「履歴」から分析を見る。生徒さんのデータは「共有用データ」で書き出してLINEで送れば、先生のiPhoneで読み込めます</li>
-  </ol></div>
-  <div class="card"><h3>見られる分析</h3>
-  <div class="note">
-  <b>バンク角</b>：ジャイロの回転を積分し、GPS速度×旋回の速さから求めた理論バンク角で少しずつズレを補正<br>
-  <b>倒し込み・起こしの速さ</b>：1秒あたり何度倒したか（°/s）。スイフティーさの指標<br>
-  <b>ブレーキG・加速G・横G</b>：G-G図（摩擦円）で、ブレーキからコーナリングへのつながりを確認<br>
-  <b>地図</b>：ルートをバンク角で色分け。コーナーをタップするとその場所とグラフに移動
-  </div></div>
+  <div class="card"><h3>📖 走行ロガーの使い方</h3>
+  <div class="note">iPhoneのセンサーとGPSで、バンク角・倒し込みの速さ・G・走ったルートを記録して分析します。</div>
+  <div class="flow"><span>①取り付け</span><span>②許可</span><span>③校正</span><span>④記録</span><span>⑤分析</span></div>
+  <div class="toc"><a href="#h-rec">記録のしかた</a><a href="#h-an">分析画面の見方</a><a href="#h-share">生徒→先生へ送る</a><a href="#h-faq">うまくいかないとき</a></div></div>
+
+  <h2 class="hh" id="h-rec">記録のしかた</h2>
+  <div class="card"><h3><i class="sn">1</i>iPhoneを取り付ける</h3>
+  <svg class="il" viewBox="0 0 330 210" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,'Hiragino Sans',sans-serif">
+<text x="8" y="16" fill="#8b94a3" font-size="10">上から見た図（上が進行方向）</text>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="#ff7a1a"/></marker></defs>
+<path d="M300 90 L300 36" stroke="#ff7a1a" stroke-width="3" marker-end="url(#ah)"/><text x="300" y="104" text-anchor="middle" fill="#ff7a1a" font-size="10" font-weight="700">前</text>
+<g><path d="M21 40 Q55 22 89 40 L85 120 Q55 132 25 120 Z" fill="#2a2f38" stroke="#4b5563"/><rect x="38" y="52" width="34" height="56" rx="7" fill="#0f1216" stroke="#e9edf2" stroke-width="2"/><rect x="47.0" y="55" width="16" height="3" rx="1.5" fill="#ff7a1a"/>
+<text x="55" y="146" text-anchor="middle" fill="#e9edf2" font-size="10.5" font-weight="700">寝かせて<tspan x="55" dy="13">上端が前</tspan></text></g>
+<g><path d="M116 40 Q150 22 184 40 L180 120 Q150 132 120 120 Z" fill="#2a2f38" stroke="#4b5563"/><rect x="133" y="52" width="34" height="56" rx="7" fill="#0f1216" stroke="#e9edf2" stroke-width="2"/><rect x="142.0" y="102" width="16" height="3" rx="1.5" fill="#ff7a1a"/>
+<text x="150" y="146" text-anchor="middle" fill="#e9edf2" font-size="10.5" font-weight="700">寝かせて<tspan x="150" dy="13">上端が後ろ</tspan></text></g>
+<g><path d="M211 40 Q245 22 279 40 L275 120 Q245 132 215 120 Z" fill="#2a2f38" stroke="#4b5563"/>
+<rect x="225" y="95" width="40" height="9" rx="3" fill="#0f1216" stroke="#e9edf2" stroke-width="2"/><text x="245" y="88" text-anchor="middle" fill="#8b94a3" font-size="9">画面は↓</text><text x="245" y="116" text-anchor="middle" fill="#8b94a3" font-size="9">ライダー</text>
+<text x="245" y="146" text-anchor="middle" fill="#e9edf2" font-size="10.5" font-weight="700">立てて<tspan x="245" dy="13">画面がライダー向き</tspan></text></g>
+<text x="165" y="182" text-anchor="middle" fill="#8b94a3" font-size="10">オレンジの印＝iPhoneの上端（カメラ側）</text>
+<text x="165" y="200" text-anchor="middle" fill="#f87171" font-size="11" font-weight="700">✕ ハンドルマウントは不可（ハンドル操作の回転が混ざる）</text>
+</svg>
+  <div class="note">タンクかトップブリッジに、ガタつかないようしっかり固定します。向きは3通りから選べます。走行中にずれると数値が狂うので、取り付けを変えたら必ず校正し直してください。</div></div>
+
+  <div class="card"><h3><i class="sn">2</i>センサーとGPSを許可する</h3>
+  <img class="hp" src="help-s1_perm.jpg" alt="許可ボタン" loading="lazy">
+  <div class="note"><b class="r">①</b>「センサーとGPSを許可」をタップ →「許可」を選びます。センサーとGPSが緑の「OK」になれば準備OK。GPSは屋外で少し待つと精度が上がります。</div></div>
+
+  <div class="card"><h3><i class="sn">3</i>名前・向きを選んで校正する</h3>
+  <img class="hp" src="help-s2_cal.jpg" alt="名前と向きと校正" loading="lazy">
+  <div class="note"><b class="r">②</b>ライダー名（生徒さんの名前）を入れる<br><b class="r">③</b>取り付けた向きを選ぶ（上の図の3通り）<br><b class="r">④</b>車体をまっすぐ立てて「校正する」</div>
+  <svg class="il" viewBox="0 0 330 150" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,'Hiragino Sans',sans-serif">
+<line x1="10" y1="128" x2="320" y2="128" stroke="#4b5563" stroke-width="2"/>
+<g transform="translate(10,0)"><text x="45" y="16" text-anchor="middle" fill="#8b94a3" font-size="10">後ろから見た図</text>
+<rect x="38" y="60" width="14" height="68" rx="6" fill="#2a2f38" stroke="#6b7280"/><rect x="30" y="44" width="30" height="22" rx="8" fill="#2a2f38" stroke="#6b7280"/>
+<rect x="38" y="34" width="14" height="6" rx="2" fill="#0f1216" stroke="#e9edf2"/>
+<line x1="45" y1="22" x2="45" y2="134" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="45" y="146" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="700">まっすぐ ○</text></g>
+<g transform="translate(120,0)"><g transform="rotate(14 45 128)"><rect x="38" y="60" width="14" height="68" rx="6" fill="#2a2f38" stroke="#6b7280"/><rect x="30" y="44" width="30" height="22" rx="8" fill="#2a2f38" stroke="#6b7280"/></g>
+<line x1="45" y1="22" x2="45" y2="134" stroke="#8b94a3" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="45" y="146" text-anchor="middle" fill="#f87171" font-size="11" font-weight="700">サイドスタンド ✕</text></g>
+<text x="318" y="56" text-anchor="end" fill="#e9edf2" font-size="11">センタースタンド</text><text x="318" y="72" text-anchor="end" fill="#e9edf2" font-size="11">か人に支えてもらい</text>
+<text x="318" y="92" text-anchor="end" fill="#ff7a1a" font-size="12" font-weight="700">約3秒 動かさない</text>
+</svg></div>
+
+  <div class="card"><h3><i class="sn">4</i>記録スタート</h3>
+  <img class="hp" src="help-s3_start.jpg" alt="記録スタート" loading="lazy">
+  <div class="note">校正が「OK」になったら <b class="r">⑤</b>「記録スタート」。<b>停車中に押して</b>から走り出します。</div>
+  <div class="warn" style="margin-top:8px">記録中は画面をつけたままにしてください。<br>設定 → 画面表示と明るさ → 自動ロック →「なし」</div></div>
+
+  <div class="card"><h3><i class="sn">5</i>記録中の画面と停止</h3>
+  <img class="hp" src="help-s4_rec.jpg" alt="記録中の画面" loading="lazy">
+  <div class="note"><b class="r">A</b> 今のバンク角（青＝左、ピンク＝右）<br><b class="r">B</b> 左右それぞれの最大バンク角<br><b class="r">C</b> 停車してから「停止」を<b>1秒長押し</b>。走行中の誤操作を防ぐため、短く押しても止まりません。止めると自動で分析画面が開きます。<br><br>走行中は画面を見ずに、運転に集中してください。</div></div>
+
+  <h2 class="hh" id="h-an">分析画面の見方</h2>
+  <div class="card"><h3>まとめ</h3>
+  <img class="hp" src="help-a1_sum.jpg" alt="まとめ" loading="lazy">
+  <div class="note"><b class="r">1</b> 左右の最大バンク角<br><b class="r">2</b> 倒し込み・起こしの最速（°/s＝1秒あたり何度倒したか）。スイフティーさの目安で、大きいほど素早い<br><b class="r">3</b> ブレーキG・加速G・横Gの最大値。ほかに最高速・走行時間・距離・コーナー数も出ます</div></div>
+
+  <div class="card"><h3>ルート地図</h3>
+  <img class="hp" src="help-a2_map.jpg" alt="ルート地図" loading="lazy">
+  <div class="note">走ったルートをバンク角で色分けします（灰→緑→黄→橙→赤の順に深い）。番号はコーナーで、青枠が左、ピンク枠が右。番号をタップするとそのコーナーにズームします。<br><span class="mut">※この画像は見本のため地図の背景を省いています</span></div></div>
+
+  <div class="card"><h3>グラフ</h3>
+  <img class="hp" src="help-a3_graph.jpg" alt="グラフ" loading="lazy">
+  <div class="note"><b class="r">1</b> 表示する項目を切り替え（バンク角・速度・倒し込み/起こし速度・前後G・横G）<br><b class="r">2</b> グラフを指でなぞると、その瞬間の数値が出て、地図にオレンジの点で場所が出ます<br><b class="r">3</b> コーナーを選ぶとそこだけ拡大されます。「全体表示に戻す」で元に戻ります</div></div>
+
+  <div class="card"><h3>G-G図（摩擦円）</h3>
+  <img class="hp" src="help-a4_gg.jpg" alt="G-G図" loading="lazy">
+  <div class="note">上＝加速、下＝ブレーキ、左右＝コーナリングの横G。コーナーを選ぶとオレンジの線でそのコーナーの動きが出ます。ブレーキ（下）からコーナリング（左右）へ、角ばらずに丸くつながっているほどスムーズです。</div></div>
+
+  <div class="card"><h3>コーナー別分析</h3>
+  <img class="hp" src="help-a5_corner.jpg" alt="コーナー一覧" loading="lazy">
+  <div class="note">15°以上寝かせたコーナーを自動で見つけて並べます。1行目＝左右と最大バンク角、進入→最低→立ち上がりの速度。2行目＝倒し込み・起こしの速さ、ブレーキG、横G。タップすると地図とグラフがそのコーナーに切り替わります。</div></div>
+
+  <h2 class="hh" id="h-share">生徒さん → 先生へデータを送る</h2>
+  <div class="card">
+  <svg class="il" viewBox="0 0 330 120" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,'Hiragino Sans',sans-serif">
+<defs><marker id="ah2" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#ff7a1a"/></marker></defs>
+<g><rect x="12" y="20" width="58" height="80" rx="9" fill="#0f1216" stroke="#e9edf2" stroke-width="2"/><text x="41" y="56" text-anchor="middle" fill="#e9edf2" font-size="10">生徒さん</text><text x="41" y="72" text-anchor="middle" fill="#8b94a3" font-size="8">共有用データ</text></g>
+<path d="M76 60 L120 60" stroke="#ff7a1a" stroke-width="2.5" marker-end="url(#ah2)"/>
+<g><rect x="128" y="38" width="74" height="44" rx="12" fill="#06c755"/><text x="165" y="65" text-anchor="middle" fill="#fff" font-size="15" font-weight="800">LINE</text></g>
+<path d="M208 60 L252 60" stroke="#ff7a1a" stroke-width="2.5" marker-end="url(#ah2)"/>
+<g><rect x="260" y="20" width="58" height="80" rx="9" fill="#0f1216" stroke="#e9edf2" stroke-width="2"/><text x="289" y="56" text-anchor="middle" fill="#e9edf2" font-size="10">先生</text><text x="289" y="72" text-anchor="middle" fill="#8b94a3" font-size="8">履歴→読み込む</text></g>
+<text x="165" y="112" text-anchor="middle" fill="#8b94a3" font-size="10">.json ファイルを送るだけで、同じ分析が見られます</text>
+</svg>
+  <h3 style="margin-top:12px"><i class="sn">1</i>生徒さん：分析画面の一番下で書き出す</h3>
+  <img class="hp" src="help-a6_export.jpg" alt="書き出し" loading="lazy">
+  <div class="note"><b class="r">1</b>「共有用データ」→ 共有メニューで LINE を選んで先生に送る<br><b class="r">2</b>「CSV」は動画編集や表計算ソフト用です（先生のアプリでは読み込めません）</div>
+  <h3 style="margin-top:12px"><i class="sn">2</i>先生：LINEで受け取ったファイルを読み込む</h3>
+  <div class="note">LINEのファイルを開き、共有ボタン →「"ファイル"に保存」。走行ロガーの「履歴」タブ下の「共有データを読み込む」から、保存したファイルを選びます。</div>
+  <img class="hp" src="help-h1_hist.jpg" alt="履歴と読み込み" loading="lazy">
+  <div class="note"><b class="r">1</b> 記録の一覧。タップで分析が開きます<br><b class="r">2</b> ここから共有データ（.json）を読み込みます</div></div>
+
+  <h2 class="hh" id="h-faq">注意点・うまくいかないとき</h2>
+  <div class="card faq">
+  <details><summary>「センサー」が反応なし・未許可のまま</summary><div class="note">Safariで開いてください（LINEの中のブラウザでは動かないことがあります）。一度「許可しない」を選んだ場合は、アプリを閉じて開き直すか、設定 → アプリ → Safari →「モーションと画面の向きのアクセス」をオンにします。</div></details>
+  <details><summary>GPSがなかなか「OK」にならない</summary><div class="note">屋外の空が見える場所で1〜2分待ちます。設定 → プライバシーとセキュリティ → 位置情報サービスで、Safariの位置情報が「使用中のみ許可」かつ「正確な位置情報」オンか確認してください。</div></details>
+  <details><summary>「揺れています」「向きの選択が合っていない」と出る</summary><div class="note">エンジンを切ってスタンドで静止させ、もう一度。「向きが合っていない」は、選んだ向きと実際の取り付けが違うときに出ます（上の図で確認）。</div></details>
+  <details><summary>記録が途中で途切れた</summary><div class="note">画面が消えると記録が止まります。自動ロックを「なし」に。電話の着信や他のアプリを開いた場合も途切れます。分析画面に途切れた回数が表示されます。</div></details>
+  <details><summary>左右が逆・数値が体感と違う</summary><div class="note">左右はGPSで曲がった向きから自動で判定するので、コーナーが少ない短い記録だと間違うことがあります。取り付けがずれた・校正後に向きを変えた場合も狂います。体感と違うときは、記録画面の「左 最大／右 最大」の数字を吉田までお知らせください。</div></details>
+  <details><summary>記録が保存されなかった</summary><div class="note">5秒より短い記録は保存しません。また、記録はそのiPhoneの中だけに保存されます。Safariの履歴やWebサイトデータを消すと記録も消えるので、残したいものは「共有用データ」で書き出しておいてください。</div></details>
+  </div>
+
   <div class="card"><h3>精度の目安・制限</h3>
   <div class="note">
   ・バンク角は±2〜3°程度の誤差を見込んでください。極低速（約9km/h以下）では補正が効かず精度が落ちます<br>
   ・Webアプリのため気圧計は使えません（標高はGPSの値を使用）<br>
-  ・画面がオフになると記録が止まります<br>
   ・GPSの更新は1秒に1回程度。ライン取りは数メートルの誤差があります<br>
-  ・左右はGPSの曲がった向きから自動判定します
+  ・バッテリーを多く使うので、長時間の記録ではモバイルバッテリーがおすすめです
   </div></div>
+  <button class="b p" id="helpDone">記録画面へ</button>
 </section>
 </main>
 
@@ -478,7 +575,7 @@ function drawMap(){
   setTimeout(()=>{map.invalidateSize();fitAll()},60);
 }
 
-function setupCanvas(cv){const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1,h=+cv.getAttribute('height');cv.width=r.width*dpr;cv.height=h*dpr;cv.style.height=h+'px';const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);return [x,r.width,h]}
+function setupCanvas(cv){const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;if(!cv.dataset.h)cv.dataset.h=cv.getAttribute('height');const h=+cv.dataset.h;cv.width=r.width*dpr;cv.height=h*dpr;cv.style.height=h+'px';const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);return [x,r.width,h]}
 let tsCursor=null;
 function drawTS(){
   const cv=$('#ts');const [x,W,H]=setupCanvas(cv);const pl=34,pr=34,pt=10,pb=20,w=W-pl-pr,h=H-pt-pb;
@@ -561,6 +658,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
   ['rec','hist','help'].forEach(k=>$('#tab-'+k).classList.toggle('hide',k!==b.dataset.tab));
   if(b.dataset.tab==='hist')loadHist();
+  window.scrollTo(0,0);
 });
 
 /* ---------- サンプルデータ ---------- */
@@ -592,6 +690,9 @@ $('#btnSample').onclick=()=>openAnalysis(makeSample());
 
 DB.open().catch(()=>{});
 refreshStatus();
+const showTab=k=>document.querySelector('nav button[data-tab="'+k+'"]').click();
+$('#helpDone').onclick=()=>{showTab('rec');window.scrollTo(0,0)};
+try{if(!localStorage.getItem('helpSeen')){localStorage.setItem('helpSeen','1');showTab('help')}}catch(e){}
 </script>
 </body>
 </html>
