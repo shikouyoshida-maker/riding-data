@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="走行ロガー">
+<meta name="theme-color" content="#0d0f12">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<title>究極RIDE 走行ロガー</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--bg:#0d0f12;--card:#171a20;--line:#2a2f38;--tx:#e9edf2;--mut:#8b94a3;--ac:#ff7a1a;--L:#38bdf8;--R:#f472b6;--ok:#4ade80;--ng:#f87171}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Hiragino Sans",sans-serif;font-size:15px}
+header{padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+header b{font-size:17px}header small{color:var(--ac);font-weight:700}
+main{padding:14px 14px calc(env(safe-area-inset-bottom) + 84px)}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:#111419;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:50}
+nav button{flex:1;background:none;border:0;color:var(--mut);padding:12px 0;font-size:13px}
+nav button.on{color:var(--ac);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h3{margin:0 0 10px;font-size:15px}
+.row{display:flex;gap:8px;align-items:center}
+.st{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.st:last-child{border:0}.ok{color:var(--ok)}.ng{color:var(--ng)}.mut{color:var(--mut)}
+button.b{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:#222731;color:var(--tx);font-size:16px;font-weight:600;margin-top:8px}
+button.p{background:var(--ac);border-color:var(--ac);color:#111}
+button.s{padding:8px 12px;width:auto;font-size:13px;margin:0}
+button:disabled{opacity:.4}
+input,select{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:#0f1216;color:var(--tx);font-size:16px}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 4px}
+.hide{display:none!important}
+#recView{position:fixed;inset:0;background:#000;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 16px) 20px calc(env(safe-area-inset-bottom) + 20px)}
+#recView .tm{font-size:22px;color:var(--ng);font-weight:700}
+#recView .big{font-size:110px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+#recView .spd{font-size:40px;font-weight:700}
+#recView .mx{display:flex;gap:30px;font-size:22px}
+#stopBtn{width:100%;padding:22px;border-radius:16px;border:0;font-size:20px;font-weight:700;background:#333;color:#fff;position:relative;overflow:hidden}
+#stopBtn i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--ng);opacity:.6}
+#anView{position:fixed;inset:0;background:var(--bg);z-index:80;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sum div{background:#0f1216;border-radius:10px;padding:8px 6px;text-align:center}
+.sum b{display:block;font-size:20px}.sum span{font-size:11px;color:var(--mut)}
+#map{height:300px;border-radius:12px;background:#222}
+canvas{width:100%;display:block;border-radius:10px;background:#0f1216;touch-action:pan-y}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{padding:6px 10px;border-radius:20px;border:1px solid var(--line);font-size:12px;color:var(--mut);background:none}
+.chip.on{color:#111;background:var(--tx)}
+.cn{padding:10px;border-radius:10px;background:#0f1216;margin-bottom:6px;font-size:13px;display:grid;grid-template-columns:44px 1fr;gap:4px 10px}
+.cn.sel{outline:2px solid var(--ac)}
+.cn .n{grid-row:span 2;font-size:20px;font-weight:800;display:flex;align-items:center;justify-content:center;border-radius:8px}
+.cn .L{background:rgba(56,189,248,.18);color:var(--L)}.cn .R{background:rgba(244,114,182,.18);color:var(--R)}
+.hist{padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--line);margin-bottom:8px}
+.hist b{font-size:15px}.hist div{font-size:13px;color:var(--mut);margin-top:3px}
+.note{font-size:13px;color:var(--mut);line-height:1.7}
+.warn{background:rgba(255,122,26,.12);border:1px solid rgba(255,122,26,.4);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.6}
+.info{font-size:12px;color:var(--mut);margin-top:6px;min-height:16px}
+.leg{display:flex;gap:10px;font-size:11px;color:var(--mut);margin-top:6px;flex-wrap:wrap}
+.leg i{display:inline-block;width:12px;height:4px;border-radius:2px;margin-right:3px;vertical-align:middle}
+.cmk{background:#111;color:#fff;border:2px solid var(--ac);border-radius:12px;font-size:11px;font-weight:700;text-align:center;line-height:18px}
+ol{padding-left:20px;line-height:1.8;font-size:14px;margin:0}
+</style>
+</head>
+<body>
+<header><b>走行ロガー</b><small>究極RIDE</small></header>
+
+<main>
+<!-- 記録タブ -->
+<section id="tab-rec">
+  <div class="card">
+    <h3>準備</h3>
+    <div class="st"><span>センサー</span><span id="sSens" class="ng">未許可</span></div>
+    <div class="st"><span>GPS</span><span id="sGps" class="ng">未取得</span></div>
+    <div class="st"><span>校正</span><span id="sCal" class="ng">未校正</span></div>
+    <button class="b" id="btnPerm">① センサーとGPSを許可</button>
+  </div>
+  <div class="card">
+    <h3>ライダーと取り付け</h3>
+    <label>ライダー名（生徒名）</label>
+    <input id="rider" placeholder="例：山田さん">
+    <label>iPhoneの取り付け向き（タンク・トップブリッジ）</label>
+    <select id="mount">
+      <option value="yf">寝かせて固定・上端が進行方向（前）</option>
+      <option value="yb">寝かせて固定・上端がライダー側（後ろ）</option>
+      <option value="zf">立てて固定・画面がライダー向き</option>
+    </select>
+    <button class="b" id="btnCal" disabled>② 校正する（車体をまっすぐ立てて静止）</button>
+    <div class="info" id="calInfo"></div>
+  </div>
+  <button class="b p" id="btnStart" disabled>③ 記録スタート</button>
+  <div class="warn" style="margin-top:12px">記録の開始・停止は必ず停車中に。走行中は画面を見ずに運転に集中してください。記録中は画面をつけたままにする必要があります（設定→画面表示と明るさ→自動ロック→「なし」がおすすめ）。</div>
+  <button class="b" id="btnSample">サンプルデータで分析画面を見る</button>
+</section>
+
+<!-- 履歴タブ -->
+<section id="tab-hist" class="hide">
+  <div id="histList"></div>
+  <label>共有データ（.json）を読み込む</label>
+  <input type="file" id="importFile" accept=".json,application/json">
+</section>
+
+<!-- 使い方タブ -->
+<section id="tab-help" class="hide">
+  <div class="card"><h3>使い方</h3>
+  <ol>
+    <li>iPhoneをタンクかトップブリッジにしっかり固定（ハンドルは不可：ハンドル操作の回転が混ざります）</li>
+    <li>「センサーとGPSを許可」をタップ</li>
+    <li>取り付け向きを選び、車体をまっすぐ立てて（センタースタンドか、誰かに支えてもらう）「校正する」</li>
+    <li>「記録スタート」→走行→停車して「停止」を長押し</li>
+    <li>「履歴」から分析を見る。生徒さんのデータは「共有用データ」で書き出してLINEで送れば、先生のiPhoneで読み込めます</li>
+  </ol></div>
+  <div class="card"><h3>見られる分析</h3>
+  <div class="note">
+  <b>バンク角</b>：ジャイロの回転を積分し、GPS速度×旋回の速さから求めた理論バンク角で少しずつズレを補正<br>
+  <b>倒し込み・起こしの速さ</b>：1秒あたり何度倒したか（°/s）。スイフティーさの指標<br>
+  <b>ブレーキG・加速G・横G</b>：G-G図（摩擦円）で、ブレーキからコーナリングへのつながりを確認<br>
+  <b>地図</b>：ルートをバンク角で色分け。コーナーをタップするとその場所とグラフに移動
+  </div></div>
+  <div class="card"><h3>精度の目安・制限</h3>
+  <div class="note">
+  ・バンク角は±2〜3°程度の誤差を見込んでください。極低速（約9km/h以下）では補正が効かず精度が落ちます<br>
+  ・Webアプリのため気圧計は使えません（標高はGPSの値を使用）<br>
+  ・画面がオフになると記録が止まります<br>
+  ・GPSの更新は1秒に1回程度。ライン取りは数メートルの誤差があります<br>
+  ・左右はGPSの曲がった向きから自動判定します
+  </div></div>
+</section>
+</main>
+
+<nav>
+  <button data-tab="rec" class="on">記録</button>
+  <button data-tab="hist">履歴</button>
+  <button data-tab="help">使い方</button>
+</nav>
+
+<!-- 記録中画面 -->
+<div id="recView" class="hide">
+  <div style="text-align:center">
+    <div class="tm">● 記録中 <span id="rTime">0:00</span></div>
+    <div class="mut" id="rGps" style="margin-top:4px">GPS</div>
+  </div>
+  <div style="text-align:center">
+    <div class="big" id="rLean">0°</div>
+    <div class="spd"><span id="rSpd">0</span> <small style="font-size:18px">km/h</small></div>
+  </div>
+  <div class="mx"><span style="color:var(--L)">左 最大 <b id="rMaxL">0</b>°</span><span style="color:var(--R)">右 最大 <b id="rMaxR">0</b>°</span></div>
+  <button id="stopBtn"><i></i><span style="position:relative">停止（長押し）</span></button>
+</div>
+
+<!-- 分析画面 -->
+<div id="anView" class="hide">
+  <header><button class="b s" id="anBack">← 戻る</button><b id="anTitle" style="flex:1;font-size:15px"></b></header>
+  <main style="padding-bottom:40px">
+    <div class="card"><div class="sum" id="anSum"></div></div>
+    <div class="card"><h3>ルート（バンク角で色分け）</h3><div id="map"></div>
+      <div class="leg"><span><i style="background:#64748b"></i>〜10°</span><span><i style="background:#4ade80"></i>〜20°</span><span><i style="background:#facc15"></i>〜30°</span><span><i style="background:#fb923c"></i>〜40°</span><span><i style="background:#ef4444"></i>40°〜</span></div>
+    </div>
+    <div class="card"><h3>グラフ <span class="mut" id="tsRange" style="font-size:12px;font-weight:400"></span></h3>
+      <div class="chips" id="chips">
+        <button class="chip on" data-k="lean">バンク角</button>
+        <button class="chip on" data-k="spd">速度</button>
+        <button class="chip" data-k="rate">倒し込み/起こし速度</button>
+        <button class="chip" data-k="lon">前後G</button>
+        <button class="chip" data-k="lat">横G</button>
+      </div>
+      <canvas id="ts" height="230"></canvas>
+      <div class="info" id="tsInfo">グラフをなぞると数値と地図の位置が出ます</div>
+      <button class="b s hide" id="tsAll" style="margin-top:6px">全体表示に戻す</button>
+    </div>
+    <div class="card"><h3>G-G図（摩擦円）</h3>
+      <canvas id="gg" height="320"></canvas>
+      <div class="note" style="margin-top:6px">上＝加速、下＝ブレーキ、左右＝コーナリングの横G。円に沿ってなめらかにつながっているほど、ブレーキからコーナリングへの移行がスムーズです。</div>
+    </div>
+    <div class="card"><h3>コーナー別分析 <span class="mut" id="cnCount" style="font-size:12px;font-weight:400"></span></h3><div id="cnList"></div></div>
+    <div class="card"><h3>書き出し</h3>
+      <button class="b" id="exShare">共有用データ（LINEなどで送る）</button>
+      <button class="b" id="exCsv">CSV（動画編集・表計算用）</button>
+      <button class="b" id="exDel" style="color:var(--ng)">この記録を削除</button>
+    </div>
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+'use strict';
+const G=9.80665,D2R=Math.PI/180,R2D=180/Math.PI,HZ=20;
+const $=s=>document.querySelector(s);
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const len=a=>Math.hypot(a[0],a[1],a[2]);
+const scl=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const nrm=a=>scl(a,1/(len(a)||1));
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const wrap=d=>{while(d>180)d-=360;while(d<-180)d+=360;return d};
+function hav(a1,o1,a2,o2){const p1=a1*D2R,p2=a2*D2R,dp=(a2-a1)*D2R,dl=(o2-o1)*D2R;const h=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;return 12742000*Math.asin(Math.sqrt(h))}
+function bear(a1,o1,a2,o2){const p1=a1*D2R,p2=a2*D2R,dl=(o2-o1)*D2R;return (Math.atan2(Math.sin(dl)*Math.cos(p2),Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl))*R2D+360)%360}
+function idxAt(arr,t){let lo=0,hi=arr.length-1;if(hi<0)return -1;if(t<=arr[0])return 0;if(t>=arr[hi])return hi;while(hi-lo>1){const m=(lo+hi)>>1;if(arr[m]<=t)lo=m;else hi=m}return lo}
+const fmtT=s=>{s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0')};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function leanColor(a){a=Math.abs(a);return a<10?'#64748b':a<20?'#4ade80':a<30?'#facc15':a<40?'#fb923c':'#ef4444'}
+
+/* ---------- 保存（IndexedDB） ---------- */
+const DB={db:null,
+  open(){return new Promise((res,rej)=>{const q=indexedDB.open('kyokuride-logger',1);q.onupgradeneeded=()=>q.result.createObjectStore('sessions',{keyPath:'id'});q.onsuccess=()=>{this.db=q.result;res()};q.onerror=()=>rej(q.error)})},
+  st(m){return this.db.transaction('sessions',m).objectStore('sessions')},
+  req(r){return new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
+  put(s){return this.req(this.st('readwrite').put(s))},
+  all(){return this.req(this.st('readonly').getAll())},
+  get(id){return this.req(this.st('readonly').get(id))},
+  del(id){return this.req(this.st('readwrite').delete(id))}
+};
+
+/* ---------- センサー ---------- */
+const sens={acc:null,rot:[0,0,0],beta:null,gamma:null,compass:null,gps:null,motion:false,lastPos:null};
+let calib=null;try{calib=JSON.parse(localStorage.getItem('calib')||'null')}catch(e){}
+const savedMount=localStorage.getItem('mount');if(savedMount)$('#mount').value=savedMount;
+$('#rider').value=localStorage.getItem('rider')||'';
+$('#rider').onchange=e=>localStorage.setItem('rider',e.target.value);
+
+function onMotion(e){
+  const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;
+  sens.acc=[a.x,a.y,a.z];
+  const r=e.rotationRate;sens.rot=r?[r.beta||0,r.gamma||0,r.alpha||0]:[0,0,0];
+  if(!sens.motion){sens.motion=true;refreshStatus()}
+  if(calBuf)calBuf.push({a:sens.acc.slice(),w:sens.rot.slice(),b:sens.beta,g:sens.gamma});
+  if(rec.on)step();
+}
+function onOrient(e){
+  sens.beta=e.beta;sens.gamma=e.gamma;
+  if(e.webkitCompassHeading!=null)sens.compass=e.webkitCompassHeading;
+  else if(e.absolute&&e.alpha!=null)sens.compass=(360-e.alpha)%360;
+}
+function onPos(p){
+  const c=p.coords,t=performance.now()/1000;
+  let spd=c.speed;
+  const lp=sens.lastPos;
+  if(spd==null||isNaN(spd)||spd<0){spd=lp&&t-lp.t>0.3?hav(lp.lat,lp.lon,c.latitude,c.longitude)/(t-lp.t):0}
+  sens.gps={lat:c.latitude,lon:c.longitude,acc:c.accuracy,spd,alt:c.altitude,t};
+  sens.lastPos={lat:c.latitude,lon:c.longitude,t};
+  refreshStatus();
+  if(rec.on){
+    rec.spd=spd;
+    rec.gps.push({t:+(t-rec.t0).toFixed(2),lat:c.latitude,lon:c.longitude,spd:+spd.toFixed(2),alt:c.altitude==null?null:+c.altitude.toFixed(1),acc:Math.round(c.accuracy)});
+    liveFlip();
+  }
+}
+async function requestSensors(){
+  try{
+    if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+      const r=await DeviceMotionEvent.requestPermission();if(r!=='granted')throw new Error('denied');
+    }
+    if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
+      try{await DeviceOrientationEvent.requestPermission()}catch(e){}
+    }
+  }catch(e){alert('モーションセンサーが許可されませんでした。Safariの設定でモーションと画面の向きへのアクセスを許可してください。');return}
+  window.addEventListener('devicemotion',onMotion);
+  window.addEventListener('deviceorientation',onOrient);
+  if('geolocation' in navigator){
+    navigator.geolocation.watchPosition(onPos,err=>{$('#sGps').textContent='取得できません';},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+  }
+  $('#btnPerm').textContent='許可済み';$('#btnPerm').disabled=true;
+  setTimeout(()=>{if(!sens.motion){$('#sSens').textContent='反応なし（実機のSafariで開いてください）'}},1500);
+  refreshStatus();
+}
+function refreshStatus(){
+  $('#sSens').textContent=sens.motion?'OK':'未許可';$('#sSens').className=sens.motion?'ok':'ng';
+  if(sens.gps){const a=Math.round(sens.gps.acc);$('#sGps').textContent='精度 ±'+a+'m'+(a>20?'（屋外で少し待つ）':'');$('#sGps').className=a<=20?'ok':'ng'}
+  const m=$('#mount').value;
+  const calOk=calib&&calib.mount===m;
+  $('#sCal').textContent=calOk?'OK（'+new Date(calib.at).toLocaleDateString('ja-JP')+'）':(calib?'向きが変わったので再校正':'未校正');
+  $('#sCal').className=calOk?'ok':'ng';
+  $('#btnCal').disabled=!sens.motion;
+  $('#btnStart').disabled=!(sens.motion&&calOk);
+}
+$('#mount').onchange=()=>{localStorage.setItem('mount',$('#mount').value);refreshStatus()};
+$('#btnPerm').onclick=requestSensors;
+
+/* ---------- 校正 ---------- */
+let calBuf=null;
+$('#btnCal').onclick=()=>{
+  calBuf=[];$('#btnCal').disabled=true;
+  let n=3;$('#calInfo').textContent='動かさないで… '+n;
+  const iv=setInterval(()=>{n--;if(n>0){$('#calInfo').textContent='動かさないで… '+n;return}
+    clearInterval(iv);finishCal();},700);
+};
+function finishCal(){
+  const buf=calBuf;calBuf=null;$('#btnCal').disabled=false;
+  if(!buf||buf.length<20){$('#calInfo').textContent='データ不足。もう一度お試しください';return}
+  let m=[0,0,0],w=[0,0,0],sd=0,bb=0,gg=0,no=0;
+  buf.forEach(x=>{m[0]+=x.a[0];m[1]+=x.a[1];m[2]+=x.a[2];w[0]+=x.w[0];w[1]+=x.w[1];w[2]+=x.w[2];if(x.b!=null){bb+=x.b;gg+=x.g;no++}});
+  m=scl(m,1/buf.length);w=scl(w,1/buf.length);
+  buf.forEach(x=>{sd+=len(sub(x.a,m))**2});sd=Math.sqrt(sd/buf.length);
+  if(sd>0.35){$('#calInfo').textContent='揺れています。車体を静止させてもう一度';return}
+  // 端末の重力の符号（iOSとAndroidで逆のことがある）を、傾きセンサーと比べて判定
+  let s=1;
+  if(no>0){const b=bb/no*D2R,g=gg/no*D2R;const up=[-Math.cos(b)*Math.sin(g),Math.sin(b),Math.cos(b)*Math.cos(g)];s=dot(m,up)>=0?1:-1}
+  const U=nrm(scl(m,s));
+  const mt=$('#mount').value;
+  const ax=mt==='yf'?[0,1,0]:mt==='yb'?[0,-1,0]:[0,0,-1];
+  let F=sub(ax,scl(U,dot(ax,U)));
+  if(len(F)<0.4){$('#calInfo').textContent='取り付け向きの選択が実際と合っていないようです';return}
+  F=nrm(F);
+  calib={s,U,F,bias:w,mount:mt,at:Date.now()};
+  localStorage.setItem('calib',JSON.stringify(calib));
+  $('#calInfo').textContent='校正しました（取り付けを変えたら再校正）';
+  refreshStatus();
+}
+
+/* ---------- 記録 ---------- */
+const rec={on:false};
+let wakeLock=null;
+async function keepAwake(){try{if('wakeLock' in navigator)wakeLock=await navigator.wakeLock.request('screen')}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(!rec.on)return;if(document.visibilityState==='visible'){keepAwake();rec.lastT=performance.now()/1000}else rec.gaps++});
+
+$('#btnStart').onclick=()=>{
+  const t=performance.now()/1000;
+  Object.assign(rec,{on:true,t0:t,lastT:t,lastS:-1,lean:0,rate:0,r:0,lonG:0,spd:sens.gps?sens.gps.spd:0,
+    S:{t:[],lean:[],rate:[],lon:[],lat:[],spd:[],hdg:[]},gps:[],gaps:0,maxL:0,maxR:0,corr:0,flip:1,lastBear:null});
+  keepAwake();
+  $('#recView').classList.remove('hide');
+  liveLoop();
+};
+function step(){
+  const t=performance.now()/1000;let dt=t-rec.lastT;rec.lastT=t;
+  if(dt<=0)return;if(dt>0.25)dt=0.02;
+  const c=calib,a=scl(sens.acc,c.s),w=sub(sens.rot,c.bias);
+  const p=dot(w,c.F),r=dot(w,c.U);
+  const k=x=>Math.min(1,dt/x);
+  rec.lonG+=(dot(a,c.F)/G-rec.lonG)*k(0.3);
+  rec.r+=(r-rec.r)*k(0.15);
+  rec.rate+=(-p-rec.rate)*k(0.08);
+  rec.lean+=-p*dt;
+  const v=rec.spd;
+  if(v>2.5){const ref=Math.asin(clamp(v*rec.r*D2R/G,-0.95,0.95))*R2D;rec.lean+=(ref-rec.lean)*k(1.2)}
+  else rec.lean+=(0-rec.lean)*k(4);
+  const latG=v*rec.r*D2R/G/Math.max(0.5,Math.cos(rec.lean*D2R));
+  const T=t-rec.t0;
+  if(T-rec.lastS>=1/HZ){
+    rec.lastS=T;const S=rec.S;
+    S.t.push(+T.toFixed(3));S.lean.push(+rec.lean.toFixed(2));S.rate.push(+rec.rate.toFixed(1));
+    S.lon.push(+rec.lonG.toFixed(3));S.lat.push(+latG.toFixed(3));S.spd.push(+v.toFixed(2));
+    S.hdg.push(sens.compass==null?null:Math.round(sens.compass));
+    const L=rec.lean*rec.flip;if(L>rec.maxL)rec.maxL=L;if(-L>rec.maxR)rec.maxR=-L;
+  }
+}
+function liveFlip(){ // GPSの曲がった向きとバンク方向を照合して左右を決める
+  const g=rec.gps;if(g.length<2)return;const a=g[g.length-2],b=g[g.length-1];
+  if(b.spd<4||hav(a.lat,a.lon,b.lat,b.lon)<2)return;
+  const br=bear(a.lat,a.lon,b.lat,b.lon);
+  if(rec.lastBear!=null){rec.corr+=rec.lean*wrap(br-rec.lastBear);if(Math.abs(rec.corr)>200){const f=rec.corr>0?-1:1;if(f!==rec.flip){rec.flip=f;const x=rec.maxL;rec.maxL=rec.maxR;rec.maxR=x}}}
+  rec.lastBear=br;
+}
+function liveLoop(){
+  if(!rec.on)return;
+  const T=performance.now()/1000-rec.t0;
+  $('#rTime').textContent=fmtT(T);
+  const L=rec.lean*rec.flip;
+  $('#rLean').textContent=Math.abs(L).toFixed(0)+'°';
+  $('#rLean').style.color=Math.abs(L)<3?'#fff':L>0?'var(--L)':'var(--R)';
+  $('#rSpd').textContent=(rec.spd*3.6).toFixed(0);
+  $('#rMaxL').textContent=rec.maxL.toFixed(0);$('#rMaxR').textContent=rec.maxR.toFixed(0);
+  $('#rGps').textContent=sens.gps?'GPS ±'+Math.round(sens.gps.acc)+'m':'GPS待ち';
+  setTimeout(liveLoop,200);
+}
+(()=>{const b=$('#stopBtn'),bar=b.querySelector('i');let tm=null,st=0,raf=0;
+  const go=()=>{const p=Math.min(1,(performance.now()-st)/1000);bar.style.width=p*100+'%';if(p>=1){end();stopRec()}else raf=requestAnimationFrame(go)};
+  const end=()=>{cancelAnimationFrame(raf);bar.style.width='0'};
+  b.addEventListener('pointerdown',e=>{e.preventDefault();st=performance.now();go()});
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,end));
+})();
+async function stopRec(){
+  if(!rec.on)return;rec.on=false;
+  try{wakeLock&&wakeLock.release()}catch(e){}
+  $('#recView').classList.add('hide');
+  if(rec.S.t.length<HZ*5){alert('記録が短すぎるため保存しませんでした');return}
+  const sess={id:'s'+Date.now(),at:Date.now(),rider:$('#rider').value||'',mount:calib.mount,samples:rec.S,gps:rec.gps,gaps:rec.gaps,ver:1};
+  await DB.put(sess);
+  openAnalysis(sess);
+}
+
+/* ---------- 分析 ---------- */
+function analyze(S){
+  const d=S.samples,n=d.t.length,g=S.gps||[];
+  // 左右判定
+  let corr=0,lb=null;
+  for(let i=1;i<g.length;i++){const a=g[i-1],b=g[i];if(b.spd<4||hav(a.lat,a.lon,b.lat,b.lon)<2){continue}
+    const br=bear(a.lat,a.lon,b.lat,b.lon);if(lb!=null){const j=idxAt(d.t,b.t);if(j>=0)corr+=d.lean[j]*wrap(br-lb)}lb=br}
+  const flip=corr>0?-1:1;
+  const t=d.t,L=d.lean.map(x=>x*flip),rate=d.rate.map(x=>x*flip),lat=d.lat.map(x=>x*flip),lon=d.lon,spd=d.spd.map(x=>x*3.6);
+  // コーナー検出
+  const C=[];let i=0;
+  while(i<n){
+    if(Math.abs(L[i])>=12){
+      const dir=Math.sign(L[i]);let s=i,e=i;
+      while(s>0&&L[s-1]*dir>=6)s--;
+      while(e<n-1&&L[e+1]*dir>=6)e++;
+      let pk=s;for(let k=s;k<=e;k++)if(L[k]*dir>L[pk]*dir)pk=k;
+      if(t[e]-t[s]>=0.6&&L[pk]*dir>=15){
+        let inR=0,outR=0,mn=1e9,lg=0;
+        for(let k=s;k<=pk;k++)inR=Math.max(inR,rate[k]*dir);
+        for(let k=pk;k<=e;k++)outR=Math.max(outR,-rate[k]*dir);
+        for(let k=s;k<=e;k++){mn=Math.min(mn,spd[k]);lg=Math.max(lg,Math.abs(lat[k]))}
+        let br=0;const bs=idxAt(t,t[s]-4);for(let k=bs;k<=pk;k++)br=Math.max(br,-lon[k]);
+        C.push({s,e,pk,dir,peak:L[pk]*dir,inR,outR,vIn:spd[s],vMin:mn,vOut:spd[e],brake:br,latG:lg,pos:gpsAt(g,t[pk])});
+      }
+      i=e+1;
+    }else i++;
+  }
+  // まとめ
+  let dist=0,altMin=1e9,altMax=-1e9;
+  for(let k=1;k<g.length;k++)dist+=hav(g[k-1].lat,g[k-1].lon,g[k].lat,g[k].lon);
+  g.forEach(p=>{if(p.alt!=null){altMin=Math.min(altMin,p.alt);altMax=Math.max(altMax,p.alt)}});
+  const mx=(arr,f)=>arr.reduce((m,x)=>Math.max(m,f(x)),0);
+  const sum={dur:t[n-1]||0,dist,vMax:mx(spd,x=>x),maxL:mx(L,x=>x),maxR:mx(L,x=>-x),
+    inR:mx(C,c=>c.inR),outR:mx(C,c=>c.outR),brake:mx(lon,x=>-x),acc:mx(lon,x=>x),latG:mx(lat,x=>Math.abs(x)),
+    elev:altMax>altMin?altMax-altMin:null};
+  return {t,L,rate,lat,lon,spd,C,sum,flip};
+}
+function gpsAt(g,t){if(!g.length)return null;let i=0;while(i<g.length-1&&g[i+1].t<t)i++;const a=g[i],b=g[Math.min(i+1,g.length-1)];
+  if(a===b||b.t===a.t)return [a.lat,a.lon];const f=clamp((t-a.t)/(b.t-a.t),0,1);return [a.lat+(b.lat-a.lat)*f,a.lon+(b.lon-a.lon)*f]}
+
+/* ---------- 分析画面 ---------- */
+let cur=null,A=null,map=null,mapLayer=null,cursorMk=null,view=null,selC=-1,chOn={lean:1,spd:1,rate:0,lon:0,lat:0};
+function openAnalysis(sess){
+  cur=sess;A=analyze(sess);selC=-1;view=[0,A.t[A.t.length-1]||1];
+  const dt=new Date(sess.at);
+  $('#anTitle').textContent=(sess.rider?sess.rider+'　':'')+dt.toLocaleDateString('ja-JP')+' '+dt.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+  const s=A.sum,f1=x=>x.toFixed(1),f0=x=>x.toFixed(0),f2=x=>x.toFixed(2);
+  const items=[[f0(s.maxL)+'°','左 最大バンク','var(--L)'],[f0(s.maxR)+'°','右 最大バンク','var(--R)'],[f0(s.vMax),'最高速 km/h'],
+    [f0(s.inR)+'°/s','最速 倒し込み'],[f0(s.outR)+'°/s','最速 起こし'],[f2(s.latG)+'G','最大 横G'],
+    [f2(s.brake)+'G','最大 ブレーキG'],[f2(s.acc)+'G','最大 加速G'],[fmtT(s.dur),'走行時間'],
+    [f1(s.dist/1000)+'km','距離'],[String(A.C.length),'コーナー数'],[s.elev==null?'-':f0(s.elev)+'m','高低差']];
+  $('#anSum').innerHTML=items.map(x=>`<div><b style="color:${x[2]||'inherit'}">${x[0]}</b><span>${x[1]}</span></div>`).join('');
+  if(sess.gaps)$('#anSum').insertAdjacentHTML('afterend',`<div class="info">※画面オフ等で記録が途切れた箇所が${sess.gaps}回あります</div>`);
+  $('#exDel').classList.toggle('hide',!!sess.sample);
+  $('#anView').classList.remove('hide');$('#anView').scrollTop=0;
+  renderCorners();drawMap();drawTS();drawGG();
+}
+$('#anBack').onclick=()=>{$('#anView').classList.add('hide');document.querySelectorAll('#anView .info').forEach(e=>{if(e.id==='')e.remove()});loadHist()};
+
+function renderCorners(){
+  $('#cnCount').textContent=A.C.length+'個（タップで地図・グラフに表示）';
+  $('#cnList').innerHTML=A.C.length?A.C.map((c,i)=>`<div class="cn${i===selC?' sel':''}" data-i="${i}">
+    <div class="n ${c.dir>0?'L':'R'}">${i+1}</div>
+    <div><b>${c.dir>0?'左':'右'} ${c.peak.toFixed(0)}°</b>　進入 ${c.vIn.toFixed(0)} → 最低 ${c.vMin.toFixed(0)} → 立上り ${c.vOut.toFixed(0)} km/h</div>
+    <div class="mut">倒し込み ${c.inR.toFixed(0)}°/s・起こし ${c.outR.toFixed(0)}°/s・ブレーキ ${c.brake.toFixed(2)}G・横G ${c.latG.toFixed(2)}</div></div>`).join('')
+    :'<div class="note">15°以上バンクしたコーナーはありませんでした</div>';
+  document.querySelectorAll('.cn').forEach(el=>el.onclick=()=>selectCorner(+el.dataset.i));
+}
+function selectCorner(i){
+  selC=i;const c=A.C[i];
+  view=[Math.max(0,A.t[c.s]-4),Math.min(A.t[A.t.length-1],A.t[c.e]+3)];
+  renderCorners();drawTS();drawGG();
+  if(map&&c.pos){const pts=cur.gps.filter(p=>p.t>=view[0]&&p.t<=view[1]).map(p=>[p.lat,p.lon]);
+    if(pts.length>1)map.fitBounds(L_.latLngBounds(pts),{padding:[30,30],maxZoom:19});else map.setView(c.pos,18)}
+  $('#tsAll').classList.remove('hide');
+  document.querySelector('#ts').scrollIntoView({behavior:'smooth',block:'center'});
+}
+$('#tsAll').onclick=()=>{selC=-1;view=[0,A.t[A.t.length-1]];renderCorners();drawTS();drawGG();$('#tsAll').classList.add('hide');fitAll()};
+
+const L_=window.L;
+function fitAll(){if(!map||!cur.gps.length)return;map.fitBounds(L_.latLngBounds(cur.gps.map(p=>[p.lat,p.lon])),{padding:[20,20]})}
+function drawMap(){
+  if(!L_){$('#map').innerHTML='<div class="note" style="padding:20px">地図を読み込めませんでした（電波を確認）</div>';return}
+  if(!map){map=L_.map('map',{zoomControl:false,attributionControl:true});
+    L_.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map)}
+  if(mapLayer)mapLayer.remove();mapLayer=L_.layerGroup().addTo(map);cursorMk=null;
+  const g=cur.gps;
+  if(g.length<2){$('#map').style.height='60px';return}
+  $('#map').style.height='300px';
+  for(let k=1;k<g.length;k++){const j=idxAt(A.t,g[k].t);const a=Math.max(Math.abs(A.L[idxAt(A.t,g[k-1].t)]||0),Math.abs(A.L[j]||0));
+    L_.polyline([[g[k-1].lat,g[k-1].lon],[g[k].lat,g[k].lon]],{color:leanColor(a),weight:5,opacity:.95}).addTo(mapLayer)}
+  A.C.forEach((c,i)=>{if(!c.pos)return;L_.marker(c.pos,{icon:L_.divIcon({className:'',html:`<div class="cmk" style="border-color:${c.dir>0?'#38bdf8':'#f472b6'}">${i+1}</div>`,iconSize:[22,22],iconAnchor:[11,11]})}).on('click',()=>selectCorner(i)).addTo(mapLayer)});
+  setTimeout(()=>{map.invalidateSize();fitAll()},60);
+}
+
+function setupCanvas(cv){const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1,h=+cv.getAttribute('height');cv.width=r.width*dpr;cv.height=h*dpr;cv.style.height=h+'px';const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);return [x,r.width,h]}
+let tsCursor=null;
+function drawTS(){
+  const cv=$('#ts');const [x,W,H]=setupCanvas(cv);const pl=34,pr=34,pt=10,pb=20,w=W-pl-pr,h=H-pt-pb;
+  const [t0,t1]=view;const X=t=>pl+(t-t0)/(t1-t0)*w;
+  $('#tsRange').textContent=selC>=0?'コーナー'+(selC+1):'全体';
+  x.font='10px -apple-system';x.fillStyle='#8b94a3';x.strokeStyle='#2a2f38';x.lineWidth=1;
+  const yL=v=>pt+h/2-v/60*(h/2);
+  [-60,-30,0,30,60].forEach(v=>{x.beginPath();x.moveTo(pl,yL(v));x.lineTo(W-pr,yL(v));x.stroke();x.fillText((v>0?'左':v<0?'右':'')+Math.abs(v)+'°',2,yL(v)+3)});
+  const st=Math.pow(10,Math.floor(Math.log10((t1-t0)/4||1)));const step=[1,2,5,10].map(k=>k*st).find(s=>(t1-t0)/s<=6)||st*10;
+  for(let s=Math.ceil(t0/step)*step;s<=t1;s+=step){x.fillText(fmtT(s),X(s)-10,H-5)}
+  const i0=Math.max(0,idxAt(A.t,t0)),i1=idxAt(A.t,t1);
+  const stride=Math.max(1,Math.floor((i1-i0)/(w*2)));
+  const line=(arr,Y,col,lw)=>{x.beginPath();x.strokeStyle=col;x.lineWidth=lw;let f=1;for(let i=i0;i<=i1;i+=stride){const px=X(A.t[i]),py=Y(arr[i]);f?x.moveTo(px,py):x.lineTo(px,py);f=0}x.stroke()};
+  const vMax=Math.max(20,Math.ceil(Math.max(...A.spd.slice(i0,i1+1))/20)*20);
+  if(chOn.spd){const Y=v=>pt+h-v/vMax*h;line(A.spd,Y,'rgba(255,255,255,.45)',1.5);x.fillStyle='rgba(255,255,255,.6)';x.fillText(vMax+'km/h',W-pr+2,pt+8);x.fillText('0',W-pr+2,pt+h)}
+  if(chOn.rate)line(A.rate,v=>pt+h/2-clamp(v,-240,240)/240*(h/2),'#a78bfa',1.2);
+  if(chOn.lon)line(A.lon,v=>pt+h/2-clamp(v,-1.2,1.2)/1.2*(h/2),'#facc15',1.4);
+  if(chOn.lat)line(A.lat,v=>pt+h/2-clamp(v,-1.5,1.5)/1.5*(h/2),'#34d399',1.4);
+  if(chOn.lean){ // 左=青 右=ピンク
+    x.lineWidth=2.2;for(let i=i0+stride;i<=i1;i+=stride){const a=A.L[i-stride],b=A.L[i];x.strokeStyle=(a+b)>=0?'#38bdf8':'#f472b6';x.beginPath();x.moveTo(X(A.t[i-stride]),yL(clamp(a,-60,60)));x.lineTo(X(A.t[i]),yL(clamp(b,-60,60)));x.stroke()}}
+  if(selC>=0){const c=A.C[selC];x.fillStyle='rgba(255,122,26,.10)';x.fillRect(X(A.t[c.s]),pt,X(A.t[c.e])-X(A.t[c.s]),h)}
+  if(tsCursor!=null){const i=tsCursor;x.strokeStyle='#ff7a1a';x.lineWidth=1;x.beginPath();x.moveTo(X(A.t[i]),pt);x.lineTo(X(A.t[i]),pt+h);x.stroke()}
+  cv._X=t=>t;cv._inv=px=>t0+(px-pl)/w*(t1-t0);
+}
+(()=>{const cv=$('#ts');const mv=e=>{const r=cv.getBoundingClientRect();const t=cv._inv(e.clientX-r.left);const i=idxAt(A.t,t);if(i<0)return;tsCursor=i;drawTS();
+  const Lv=A.L[i];$('#tsInfo').innerHTML=`${fmtT(A.t[i])}　<b style="color:${Lv>=0?'var(--L)':'var(--R)'}">${Lv>=0?'左':'右'}${Math.abs(Lv).toFixed(0)}°</b>　${A.spd[i].toFixed(0)}km/h　${A.rate[i]*Math.sign(Lv||1)>=0?'倒し込み':'起こし'}${Math.abs(A.rate[i]).toFixed(0)}°/s　前後${A.lon[i].toFixed(2)}G　横${Math.abs(A.lat[i]).toFixed(2)}G`;
+  const p=gpsAt(cur.gps,A.t[i]);if(map&&p){if(!cursorMk)cursorMk=L_.circleMarker(p,{radius:7,color:'#fff',fillColor:'#ff7a1a',fillOpacity:1,weight:2}).addTo(mapLayer);else cursorMk.setLatLng(p)}};
+  cv.addEventListener('pointerdown',mv);cv.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType==='touch')mv(e)});})();
+document.querySelectorAll('#chips .chip').forEach(b=>b.onclick=()=>{chOn[b.dataset.k]^=1;b.classList.toggle('on');drawTS()});
+
+function drawGG(){
+  const cv=$('#gg');const [x,W,H]=setupCanvas(cv);const cx=W/2,cy=H/2,R=Math.min(W,H)/2-18,M=1.2,sc=R/M;
+  x.strokeStyle='#2a2f38';x.fillStyle='#8b94a3';x.font='10px -apple-system';
+  [0.5,1.0].forEach(r=>{x.beginPath();x.arc(cx,cy,r*sc,0,Math.PI*2);x.stroke();x.fillText(r.toFixed(1)+'G',cx+r*sc*0.71+2,cy-r*sc*0.71)});
+  x.beginPath();x.moveTo(cx-R,cy);x.lineTo(cx+R,cy);x.moveTo(cx,cy-R);x.lineTo(cx,cy+R);x.stroke();
+  x.fillText('加速',cx+4,12);x.fillText('ブレーキ',cx+4,H-4);x.fillText('左',4,cy-4);x.fillText('右',W-14,cy-4);
+  const P=(i,col,r)=>{const px=cx-clamp(A.lat[i],-M,M)*sc,py=cy-clamp(A.lon[i],-M,M)*sc;x.fillStyle=col;x.fillRect(px-r/2,py-r/2,r,r)};
+  const n=A.t.length,stride=Math.max(1,Math.floor(n/6000));
+  for(let i=0;i<n;i+=stride)if(A.spd[i]>8)P(i,'rgba(148,163,184,.35)',2);
+  if(selC>=0){const c=A.C[selC];const s=idxAt(A.t,view[0]),e=idxAt(A.t,view[1]);
+    x.strokeStyle='#ff7a1a';x.lineWidth=2;x.beginPath();for(let i=s;i<=e;i++){const px=cx-clamp(A.lat[i],-M,M)*sc,py=cy-clamp(A.lon[i],-M,M)*sc;i===s?x.moveTo(px,py):x.lineTo(px,py)}x.stroke()}
+}
+window.addEventListener('resize',()=>{if(!$('#anView').classList.contains('hide')){drawTS();drawGG()}});
+
+/* ---------- 書き出し ---------- */
+async function shareFile(name,text,type){
+  const file=new File([text],name,{type});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:name});return}catch(e){if(e.name==='AbortError')return}}
+  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+const fname=ext=>{const d=new Date(cur.at);const p=n=>String(n).padStart(2,'0');return `ride_${cur.rider?cur.rider+'_':''}${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.${ext}`};
+$('#exShare').onclick=()=>shareFile(fname('json'),JSON.stringify(cur),'application/json');
+$('#exCsv').onclick=()=>{
+  const rows=['time_s,lean_deg(+left),roll_rate_dps,long_G(+accel),lat_G(+left),speed_kmh,lat,lon'];
+  for(let i=0;i<A.t.length;i++){const p=gpsAt(cur.gps,A.t[i])||['',''];rows.push([A.t[i],A.L[i].toFixed(1),A.rate[i].toFixed(0),A.lon[i].toFixed(3),A.lat[i].toFixed(3),A.spd[i].toFixed(1),p[0]===''?'':p[0].toFixed(6),p[1]===''?'':p[1].toFixed(6)].join(','))}
+  shareFile(fname('csv'),'﻿'+rows.join('\n'),'text/csv');
+};
+$('#exDel').onclick=async()=>{if(!confirm('この記録を削除しますか？元に戻せません。'))return;await DB.del(cur.id);$('#anBack').click()};
+
+/* ---------- 履歴 ---------- */
+async function loadHist(){
+  let list=[];try{list=await DB.all()}catch(e){}
+  list.sort((a,b)=>b.at-a.at);
+  $('#histList').innerHTML=list.length?list.map(s=>{const d=s.samples;let mL=0,mR=0;
+    const A2=analyze(s);mL=A2.sum.maxL;mR=A2.sum.maxR;const dt=new Date(s.at);
+    return `<div class="hist" data-id="${esc(s.id)}"><b>${esc(s.rider||'名前なし')}</b>　<span class="mut">${dt.toLocaleDateString('ja-JP')} ${dt.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</span>
+    <div>${fmtT(A2.sum.dur)}・最大バンク 左${mL.toFixed(0)}° / 右${mR.toFixed(0)}°・コーナー${A2.C.length}個</div></div>`}).join('')
+    :'<div class="card note">まだ記録がありません。記録タブから走行を記録するか、共有データを読み込んでください。</div>';
+  document.querySelectorAll('.hist').forEach(el=>el.onclick=async()=>openAnalysis(await DB.get(el.dataset.id)));
+}
+$('#importFile').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{const s=JSON.parse(await f.text());if(!s.samples||!s.samples.t)throw 0;s.id=s.id||'s'+Date.now();delete s.sample;await DB.put(s);loadHist();openAnalysis(s)}
+  catch(err){alert('読み込めないファイルです')}
+  e.target.value='';
+};
+
+/* ---------- タブ ---------- */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+  ['rec','hist','help'].forEach(k=>$('#tab-'+k).classList.toggle('hide',k!==b.dataset.tab));
+  if(b.dataset.tab==='hist')loadHist();
+});
+
+/* ---------- サンプルデータ ---------- */
+function makeSample(){
+  const segs=[[140,0],[40,-1/22],[70,0],[38,1/14],[25,0],[30,-1/12],[30,1/12],[110,0],[60,1/30],[50,0],[45,-1/16],[90,0],[35,1/20],[60,0]];
+  const lean0=[0,40,0,42,0,36,38,0,44,0,41,0,39,0];
+  const vc=segs.map(([l,k],i)=>k?Math.sqrt(Math.tan(lean0[i]*D2R)*G/Math.abs(k)):30);
+  const S={t:[],lean:[],rate:[],lon:[],lat:[],spd:[],hdg:[]},gps=[];
+  const dt=1/HZ,lat0=33.5847,lon0=130.4870;
+  let si=0,s=0,v=8,hd=60*D2R,x=0,y=0,lean=0,t=0,lastG=-1;const rnd=a=>(Math.random()-.5)*a;
+  for(let lap=0;lap<2;lap++){si=0;s=0;
+    while(si<segs.length){
+      const [Ls,k]=segs[si];const rem=Ls-s;
+      let nv=30;for(let j=si+1;j<segs.length;j++){if(segs[j][1]){nv=vc[j];break}}
+      const target=k?vc[si]:Math.min(30,Math.sqrt(nv*nv+2*0.75*G*Math.max(0,rem-3)));
+      const vn=v<target?Math.min(target,v+0.35*G*dt):Math.max(target,v-0.85*G*dt);
+      const lonG=(vn-v)/dt/G;v=vn;
+      const lt=Math.atan(v*v*k/G)*R2D;const nl=lean+(lt-lean)*Math.min(1,dt/0.28);const rate=(nl-lean)/dt;lean=nl;
+      hd-=v*k*dt;x+=v*Math.sin(hd)*dt;y+=v*Math.cos(hd)*dt;s+=v*dt;if(s>=Ls){s-=Ls;si++}
+      S.t.push(+t.toFixed(3));S.lean.push(+(lean+rnd(1)).toFixed(2));S.rate.push(+(rate+rnd(6)).toFixed(1));
+      S.lon.push(+(lonG+rnd(.06)).toFixed(3));S.lat.push(+(v*v*k/G+rnd(.04)).toFixed(3));S.spd.push(+v.toFixed(2));S.hdg.push(null);
+      if(t-lastG>=1){lastG=t;gps.push({t:+t.toFixed(2),lat:lat0+(y+rnd(2))/111320,lon:lon0+(x+rnd(2))/(111320*Math.cos(lat0*D2R)),spd:+v.toFixed(2),alt:+(40+y*0.02).toFixed(1),acc:4})}
+      t+=dt;
+    }
+  }
+  return {id:'sample',sample:true,at:Date.now(),rider:'サンプル',mount:'yf',samples:S,gps,gaps:0,ver:1};
+}
+$('#btnSample').onclick=()=>openAnalysis(makeSample());
+
+DB.open().catch(()=>{});
+refreshStatus();
+</script>
+</body>
+</html>
