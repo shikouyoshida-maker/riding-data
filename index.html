@@ -627,7 +627,7 @@ const L_=window.L;
 function fitAll(){if(!map||!cur.gps.length)return;map.fitBounds(L_.latLngBounds(cur.gps.map(p=>[p.lat,p.lon])),{padding:[20,20]})}
 function drawMap(){
   if(!L_){$('#map').innerHTML='<div class="note" style="padding:20px">地図を読み込めませんでした（電波を確認）</div>';return}
-  if(!map){map=L_.map('map',{zoomControl:false,attributionControl:true,maxZoom:22});
+  if(!map){map=L_.map('map',{zoomControl:false,attributionControl:true,maxZoom:22});map.attributionControl.setPrefix(false);
     L_.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,maxNativeZoom:19,attribution:'© OpenStreetMap'}).addTo(map)}
   if(mapLayer)mapLayer.remove();mapLayer=L_.layerGroup().addTo(map);cursorMk=null;
   const g=cur.gps;
@@ -744,7 +744,7 @@ function drawCGG(){
 }
 function drawCMap(){
   if(!L_){$('#cmpMap').innerHTML='<div class="note" style="padding:20px">地図を読み込めませんでした</div>';return}
-  if(!cmpMapObj){cmpMapObj=L_.map('cmpMap',{zoomControl:false,maxZoom:22});L_.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,maxNativeZoom:19,attribution:'© OpenStreetMap'}).addTo(cmpMapObj)}
+  if(!cmpMapObj){cmpMapObj=L_.map('cmpMap',{zoomControl:false,maxZoom:22});cmpMapObj.attributionControl.setPrefix(false);L_.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,maxNativeZoom:19,attribution:'© OpenStreetMap'}).addTo(cmpMapObj)}
   if(cmpLayer)cmpLayer.remove();cmpLayer=L_.layerGroup().addTo(cmpMapObj);
   const all=[];[[CA,'#ff7a1a'],[CB,'#22d3ee']].forEach(([c,col])=>{const pts=(c.s.gps||[]).map(p=>[p.lat,p.lon]);if(pts.length>1){L_.polyline(pts,{color:col,weight:4,opacity:.9}).addTo(cmpLayer);all.push(...pts)}});
   $('#cmpMap').style.height=all.length?'300px':'60px';
